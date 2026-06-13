@@ -9,6 +9,7 @@ import {
   History
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "@/components/notification-bell";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,13 +31,14 @@ export function Layout({ children }: LayoutProps) {
     <div className="flex min-h-screen w-full flex-col lg:flex-row bg-background dark">
       {/* Sidebar */}
       <aside className="w-full lg:w-64 border-r border-border bg-sidebar shrink-0 flex flex-col">
-        <div className="flex h-14 items-center border-b border-border px-6">
+        <div className="flex h-14 items-center justify-between border-b border-border px-4">
           <div className="flex items-center gap-2 font-serif font-bold text-lg tracking-tight">
             <div className="size-6 bg-primary text-primary-foreground flex items-center justify-center text-sm">
               <span className="font-mono">R</span>
             </div>
             RecruitIntel
           </div>
+          <NotificationBell />
         </div>
         <div className="flex-1 overflow-auto py-4">
           <nav className="space-y-1 px-4 text-sm font-medium">

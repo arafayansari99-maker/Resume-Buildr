@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
 import { Loader2, Trophy, User, Download, History, ChevronRight, ArrowLeft } from "lucide-react";
 import { exportRankingPDF } from "@/lib/export-pdf";
 
@@ -120,6 +121,7 @@ function HistoryRow({ run, isActive, onClick }: { run: RankingRun; isActive: boo
 
 export default function RankPage() {
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   const { data: jobs, isLoading: isLoadingJobs } = useListJobs();
   const { data: resumes, isLoading: isLoadingResumes } = useListResumes();
   const { data: history, isLoading: isLoadingHistory } = useListRankingRuns();
@@ -156,12 +158,19 @@ export default function RankPage() {
     rankCandidates.mutate(
       { data: { job_id: parseInt(selectedJobId), resume_ids: selectedResumeIds } },
       {
-        onSuccess: () => {
-          // history list will auto-refetch via invalidation
+        onSuccess: (data) => {
+          const candidates = data as RankedCandidate[];
+          const top = candidates[0];
+          addNotification({
+            type: "success",
+            title: "Ranking complete",
+            message: `${candidates.length} candidates ranked for ${selectedJobTitle}. Top scorer: ${top?.candidate_name ?? "—"} (${top?.ats_score ?? "—"}).`,
+          });
         },
         onError: (err: unknown) => {
           const msg = err instanceof Error ? err.message : "Failed to generate rankings.";
           toast({ title: "Ranking failed", description: msg, variant: "destructive" });
+          addNotification({ type: "error", title: "Ranking failed", message: msg });
         },
       }
     );

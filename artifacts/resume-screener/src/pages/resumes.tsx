@@ -35,12 +35,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export default function ResumesPage() {
   const { data: resumes, isLoading } = useListResumes();
   const deleteResume = useDeleteResume();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   const [previewId, setPreviewId] = useState<number | null>(null);
 
   const handleDelete = (id: number, e: MouseEvent) => {
@@ -50,15 +52,14 @@ export default function ResumesPage() {
       {
         onSuccess: () => {
           toast({ title: "Resume deleted." });
+          addNotification({ type: "info", title: "Resume deleted", message: "The candidate resume was removed from the system." });
           queryClient.invalidateQueries({ queryKey: getListResumesQueryKey() });
           if (previewId === id) setPreviewId(null);
         },
         onError: (err: any) => {
-          toast({
-            title: "Failed to delete resume.",
-            description: err?.message || "Unknown error",
-            variant: "destructive",
-          });
+          const msg = err?.message || "Unknown error";
+          toast({ title: "Failed to delete resume.", description: msg, variant: "destructive" });
+          addNotification({ type: "error", title: "Resume deletion failed", message: msg });
         },
       }
     );
@@ -322,6 +323,7 @@ function UploadDialog() {
   const uploadResume = useUploadResume();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   const handleUpload = () => {
     if (!file || !candidateName) return;
@@ -334,17 +336,20 @@ function UploadDialog() {
             title: "Resume uploaded.",
             description: `Found ${result.skills_found.length} skills in ${result.candidate_name}'s resume.`,
           });
+          addNotification({
+            type: "success",
+            title: "Resume uploaded",
+            message: `${result.candidate_name}'s resume parsed — ${result.skills_found.length} skill${result.skills_found.length !== 1 ? "s" : ""} detected.`,
+          });
           queryClient.invalidateQueries({ queryKey: getListResumesQueryKey() });
           setOpen(false);
           setFile(null);
           setCandidateName("");
         },
         onError: (err: any) => {
-          toast({
-            title: "Upload failed.",
-            description: err?.message || "Unknown error",
-            variant: "destructive",
-          });
+          const msg = err?.message || "Unknown error";
+          toast({ title: "Upload failed.", description: msg, variant: "destructive" });
+          addNotification({ type: "error", title: "Resume upload failed", message: msg });
         },
       }
     );

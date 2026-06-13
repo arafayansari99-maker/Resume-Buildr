@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
 
 // ── Jobs list page ─────────────────────────────────────────────────────────
 
@@ -33,19 +34,23 @@ export default function JobsPage() {
   const deleteJob = useDeleteJob();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
   const handleDelete = (id: number) => {
+    const job = jobs?.find(j => j.id === id);
     deleteJob.mutate({ jobId: id }, {
       onSuccess: () => {
         toast({ title: "Job deleted successfully." });
+        addNotification({ type: "info", title: "Job deleted", message: job?.title ? `"${job.title}" was removed.` : undefined });
         queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
       },
       onError: (err: unknown) => {
         const msg = err instanceof Error ? err.message : "Unknown error";
         toast({ title: "Failed to delete job.", description: msg, variant: "destructive" });
+        addNotification({ type: "error", title: "Job deletion failed", message: msg });
       },
     });
   };
@@ -148,19 +153,26 @@ function useSaveJob(onSuccess: () => void) {
   const createJob = useCreateJob();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
-  const save = (data: { title: string; company: string; description: string; skills: string[] }) => {
+  const save = (data: { title: string; company: string; description: string; skills: string[]; imported?: boolean }) => {
     createJob.mutate(
       { data: { title: data.title, company: data.company || undefined, description: data.description, required_skills: data.skills } },
       {
         onSuccess: () => {
           toast({ title: "Job created successfully." });
+          addNotification({
+            type: "success",
+            title: data.imported ? "Job imported" : "Job created",
+            message: `"${data.title}"${data.company ? ` at ${data.company}` : ""} added with ${data.skills.length} required skill${data.skills.length !== 1 ? "s" : ""}.`,
+          });
           queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
           onSuccess();
         },
         onError: (err: unknown) => {
           const msg = err instanceof Error ? err.message : "Unknown error";
           toast({ title: "Failed to create job.", description: msg, variant: "destructive" });
+          addNotification({ type: "error", title: "Job creation failed", message: msg });
         },
       }
     );
@@ -280,7 +292,7 @@ function ImportJobDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
   const handleSave = () => {
     if (!title || !description) return;
-    save({ title, company, description, skills: skillsInput.split(",").map(s => s.trim()).filter(Boolean) });
+    save({ title, company, description, skills: skillsInput.split(",").map(s => s.trim()).filter(Boolean), imported: true });
   };
 
   const placeholderUrl = PLACEHOLDER_URLS[Math.floor(Math.random() * PLACEHOLDER_URLS.length)];

@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/use-notifications";
 import { PlaySquare, Loader2, FileText, Briefcase } from "lucide-react";
 
 export default function AnalyzePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   
   const { data: resumes, isLoading: isLoadingResumes } = useListResumes();
   const { data: jobs, isLoading: isLoadingJobs } = useListJobs();
@@ -23,6 +25,9 @@ export default function AnalyzePage() {
   const handleAnalyze = () => {
     if (!selectedResumeId || !selectedJobId) return;
     
+    const resume = resumes?.find(r => r.id.toString() === selectedResumeId);
+    const job = jobs?.find(j => j.id.toString() === selectedJobId);
+
     analyzeResume.mutate({
       data: {
         resume_id: parseInt(selectedResumeId),
@@ -31,14 +36,17 @@ export default function AnalyzePage() {
     }, {
       onSuccess: (result) => {
         toast({ title: "Analysis complete", description: "Navigating to results..." });
+        addNotification({
+          type: "success",
+          title: "Analysis complete",
+          message: `${resume?.candidate_name ?? "Candidate"} scored ${result.ats_score ?? "—"} for ${job?.title ?? "the job"}.`,
+        });
         setLocation(`/results/${result.id}`);
       },
       onError: (err: any) => {
-        toast({ 
-          title: "Analysis failed", 
-          description: err?.message || "Something went wrong during analysis", 
-          variant: "destructive" 
-        });
+        const msg = err?.message || "Something went wrong during analysis";
+        toast({ title: "Analysis failed", description: msg, variant: "destructive" });
+        addNotification({ type: "error", title: "Analysis failed", message: msg });
       }
     });
   };
