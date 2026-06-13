@@ -1,11 +1,13 @@
-import React from "react";
+import { useState } from "react";
 import { useGetAnalysisResult } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, CheckCircle2, XCircle, AlertCircle, Info, ThumbsUp, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, CheckCircle2, AlertCircle, Info, ThumbsUp, TrendingUp, Download, Loader2 } from "lucide-react";
+import { exportAnalysisPDF } from "@/lib/export-pdf";
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
 
 export default function ResultDetailPage() {
@@ -13,6 +15,17 @@ export default function ResultDetailPage() {
   const { data: result, isLoading, error } = useGetAnalysisResult(parseInt(id!), {
     query: { enabled: !!id, queryKey: ['analysisResult', id] }
   });
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!result) return;
+    setExporting(true);
+    try {
+      exportAnalysisPDF(result);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -52,8 +65,23 @@ export default function ResultDetailPage() {
               <span className="text-foreground font-medium">{result.job_title}</span>
             </div>
           </div>
-          <div className="text-sm font-mono text-muted-foreground">
-            Report ID: {result.id} | Generated: {new Date(result.created_at).toLocaleDateString()}
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-mono text-muted-foreground hidden md:block">
+              Report #{result.id} &middot; {new Date(result.created_at).toLocaleDateString()}
+            </span>
+            <Button
+              onClick={handleExport}
+              disabled={exporting}
+              variant="outline"
+              className="gap-2"
+              data-testid="button-export-pdf"
+            >
+              {exporting ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
+              ) : (
+                <><Download className="h-4 w-4" /> Export PDF</>
+              )}
+            </Button>
           </div>
         </div>
       </div>
