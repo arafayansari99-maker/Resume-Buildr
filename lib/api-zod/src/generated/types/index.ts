@@ -21,6 +21,7 @@ export * from './rankedCandidate';
 export * from './rankRequest';
 export * from './recommendation';
 export * from './resume';
+export * from './resumeDetail';
 export * from './resumeFileInput';
 export * from './resumeUploadResponse';
 export * from './scoreBreakdown';

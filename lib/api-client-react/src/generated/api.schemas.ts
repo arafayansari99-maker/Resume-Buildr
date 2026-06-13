@@ -31,6 +31,16 @@ export interface ResumeUploadResponse {
   created_at: string;
 }
 
+export interface ResumeDetail {
+  id: number;
+  candidate_name: string;
+  filename: string;
+  skills_found: string[];
+  created_at: string;
+  analysis_count: number;
+  raw_text: string;
+}
+
 export interface Resume {
   id: number;
   candidate_name: string;

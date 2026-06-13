@@ -32,6 +32,7 @@ import type {
   RankRequest,
   RankedCandidate,
   Resume,
+  ResumeDetail,
   ResumeFileInput,
   ResumeUploadResponse
 } from './api.schemas';
@@ -289,9 +290,9 @@ export const getGetResumeUrl = (resumeId: number,) => {
 /**
  * @summary Get a resume by ID
  */
-export const getResume = async (resumeId: number, options?: RequestInit): Promise<Resume> => {
+export const getResume = async (resumeId: number, options?: RequestInit): Promise<ResumeDetail> => {
 
-  return customFetch<Resume>(getGetResumeUrl(resumeId),
+  return customFetch<ResumeDetail>(getGetResumeUrl(resumeId),
   {
     ...options,
     method: 'GET'

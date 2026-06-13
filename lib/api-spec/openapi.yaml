@@ -87,7 +87,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Resume"
+                $ref: "#/components/schemas/ResumeDetail"
         "404":
           description: Not found
           content:
@@ -340,6 +340,34 @@ components:
         - extracted_text_preview
         - skills_found
         - created_at
+
+    ResumeDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        candidate_name:
+          type: string
+        filename:
+          type: string
+        skills_found:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+        analysis_count:
+          type: integer
+        raw_text:
+          type: string
+      required:
+        - id
+        - candidate_name
+        - filename
+        - skills_found
+        - created_at
+        - analysis_count
+        - raw_text
 
     Resume:
       type: object

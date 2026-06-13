@@ -135,6 +135,7 @@ def get_resume(resume_id: int, db: Session = Depends(get_db)):
         "skills_found": r.skills_found or [],
         "created_at": _dt_str(r.created_at),
         "analysis_count": count,
+        "raw_text": r.raw_text or "",
     }
 
 

@@ -61,7 +61,8 @@ export const GetResumeResponse = zod.object({
   "filename": zod.string(),
   "skills_found": zod.array(zod.string()),
   "created_at": zod.string(),
-  "analysis_count": zod.number()
+  "analysis_count": zod.number(),
+  "raw_text": zod.string()
 })
 
 

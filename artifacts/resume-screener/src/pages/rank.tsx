@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useListJobs, useListResumes, useRankCandidates } from "@workspace/api-client-react";
+import type { RankedCandidate } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,8 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trophy, ArrowRight, User } from "lucide-react";
-import { RankedCandidate } from "@workspace/api-client-react/src/generated/api.schemas";
+import { Loader2, Trophy, User } from "lucide-react";
 
 export default function RankPage() {
   const { toast } = useToast();
@@ -192,7 +192,7 @@ export default function RankPage() {
                               Matched Skills ({candidate.matched_skills.length})
                             </div>
                             <div className="flex flex-wrap gap-1">
-                              {candidate.matched_skills.slice(0, 5).map((s, i) => (
+                              {candidate.matched_skills.slice(0, 5).map((s: string, i: number) => (
                                 <Badge key={i} variant="outline" className="text-[10px] py-0 border-emerald-500/30 bg-emerald-500/5">{s}</Badge>
                               ))}
                               {candidate.matched_skills.length > 5 && (
@@ -207,7 +207,7 @@ export default function RankPage() {
                               Missing Skills ({candidate.missing_skills.length})
                             </div>
                             <div className="flex flex-wrap gap-1">
-                              {candidate.missing_skills.slice(0, 5).map((s, i) => (
+                              {candidate.missing_skills.slice(0, 5).map((s: string, i: number) => (
                                 <Badge key={i} variant="outline" className="text-[10px] py-0 border-destructive/30 text-destructive">{s}</Badge>
                               ))}
                               {candidate.missing_skills.length > 5 && (
