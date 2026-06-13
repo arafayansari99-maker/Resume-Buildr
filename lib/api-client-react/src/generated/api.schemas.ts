@@ -50,6 +50,19 @@ export interface Resume {
   analysis_count: number;
 }
 
+export interface JobImportRequest {
+  url: string;
+}
+
+export interface JobImportResult {
+  title: string;
+  company?: string;
+  location?: string;
+  description: string;
+  required_skills: string[];
+  source_url: string;
+}
+
 export interface CreateJobRequest {
   title: string;
   company?: string;

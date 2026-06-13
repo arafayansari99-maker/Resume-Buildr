@@ -28,6 +28,8 @@ import type {
   ErrorResponse,
   HealthStatus,
   Job,
+  JobImportRequest,
+  JobImportResult,
   MessageResponse,
   RankRequest,
   RankedCandidate,
@@ -575,6 +577,77 @@ export function useListJobs<TData = Awaited<ReturnType<typeof listJobs>>, TError
 
 
 
+
+export const getImportJobFromUrlUrl = () => {
+
+
+
+
+  return `/api/jobs/import-url`
+}
+
+/**
+ * @summary Extract job data from a job board URL
+ */
+export const importJobFromUrl = async (jobImportRequest: JobImportRequest, options?: RequestInit): Promise<JobImportResult> => {
+
+  return customFetch<JobImportResult>(getImportJobFromUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      jobImportRequest,)
+  }
+);}
+
+
+
+
+export const getImportJobFromUrlMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importJobFromUrl>>, TError,{data: BodyType<JobImportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importJobFromUrl>>, TError,{data: BodyType<JobImportRequest>}, TContext> => {
+
+const mutationKey = ['importJobFromUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importJobFromUrl>>, {data: BodyType<JobImportRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importJobFromUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportJobFromUrlMutationResult = NonNullable<Awaited<ReturnType<typeof importJobFromUrl>>>
+    export type ImportJobFromUrlMutationBody = BodyType<JobImportRequest>
+    export type ImportJobFromUrlMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Extract job data from a job board URL
+ */
+export const useImportJobFromUrl = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importJobFromUrl>>, TError,{data: BodyType<JobImportRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importJobFromUrl>>,
+        TError,
+        {data: BodyType<JobImportRequest>},
+        TContext
+      > => {
+      return useMutation(getImportJobFromUrlMutationOptions(options));
+    }
 
 export const getGetJobUrl = (jobId: number,) => {
 

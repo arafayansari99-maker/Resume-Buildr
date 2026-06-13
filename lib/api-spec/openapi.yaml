@@ -144,6 +144,31 @@ paths:
                 items:
                   $ref: "#/components/schemas/Job"
 
+  /jobs/import-url:
+    post:
+      operationId: importJobFromUrl
+      tags: [jobs]
+      summary: Extract job data from a job board URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobImportRequest"
+      responses:
+        "200":
+          description: Extracted job data preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobImportResult"
+        "400":
+          description: Could not extract data from URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /jobs/{job_id}:
     get:
       operationId: getJob
@@ -433,6 +458,37 @@ components:
         - skills_found
         - created_at
         - analysis_count
+
+    JobImportRequest:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    JobImportResult:
+      type: object
+      properties:
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+        source_url:
+          type: string
+      required:
+        - title
+        - description
+        - required_skills
+        - source_url
 
     CreateJobRequest:
       type: object

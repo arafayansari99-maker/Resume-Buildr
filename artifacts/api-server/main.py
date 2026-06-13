@@ -19,6 +19,7 @@ from database import (
     create_tables,
     get_db,
 )
+from job_scraper import scrape_job_from_url
 from nlp_engine import (
     analyze_resume_against_job,
     extract_skills,
@@ -158,6 +159,33 @@ class CreateJobRequest(BaseModel):
     company: Optional[str] = ""
     description: str
     required_skills: Optional[list[str]] = []
+
+
+class JobImportRequest(BaseModel):
+    url: str
+
+
+@app.post("/api/jobs/import-url")
+def import_job_from_url(req: JobImportRequest):
+    try:
+        data = scrape_job_from_url(req.url.strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        logger.exception("unexpected scrape error for %s", req.url)
+        raise HTTPException(status_code=400, detail=f"Failed to extract job data: {exc}")
+
+    # Auto-extract skills from the description
+    skills = extract_skills(data.get("description") or "")
+
+    return {
+        "title":          data.get("title") or "",
+        "company":        data.get("company") or "",
+        "location":       data.get("location") or "",
+        "description":    data.get("description") or "",
+        "required_skills": skills,
+        "source_url":     data.get("source_url") or req.url,
+    }
 
 
 @app.post("/api/jobs")

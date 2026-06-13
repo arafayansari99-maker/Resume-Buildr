@@ -113,6 +113,23 @@ export const ListJobsResponse = zod.array(ListJobsResponseItem)
 
 
 /**
+ * @summary Extract job data from a job board URL
+ */
+export const ImportJobFromUrlBody = zod.object({
+  "url": zod.string()
+})
+
+export const ImportJobFromUrlResponse = zod.object({
+  "title": zod.string(),
+  "company": zod.string().optional(),
+  "location": zod.string().optional(),
+  "description": zod.string(),
+  "required_skills": zod.array(zod.string()),
+  "source_url": zod.string()
+})
+
+
+/**
  * @summary Get a job description by ID
  */
 export const GetJobParams = zod.object({

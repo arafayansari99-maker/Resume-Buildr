@@ -16,6 +16,8 @@ export * from './dashboardStatsTopMissingSkillsItem';
 export * from './errorResponse';
 export * from './healthStatus';
 export * from './job';
+export * from './jobImportRequest';
+export * from './jobImportResult';
 export * from './messageResponse';
 export * from './rankedCandidate';
 export * from './rankingRun';
