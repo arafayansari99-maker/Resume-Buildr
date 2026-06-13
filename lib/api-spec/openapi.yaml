@@ -3,20 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: AI Resume Screening & Job Matching API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: resumes
+    description: Resume upload and management
+  - name: analysis
+    description: Resume analysis and scoring
+  - name: jobs
+    description: Job description management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,8 +29,269 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /resumes/upload:
+    post:
+      operationId: uploadResume
+      tags: [resumes]
+      summary: Upload a PDF resume
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ResumeFileInput"
+      responses:
+        "200":
+          description: Resume uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResumeUploadResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /resumes:
+    get:
+      operationId: listResumes
+      tags: [resumes]
+      summary: List all uploaded resumes
+      responses:
+        "200":
+          description: List of resumes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resume"
+
+  /resumes/{resume_id}:
+    get:
+      operationId: getResume
+      tags: [resumes]
+      summary: Get a resume by ID
+      parameters:
+        - name: resume_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Resume details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resume"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteResume
+      tags: [resumes]
+      summary: Delete a resume
+      parameters:
+        - name: resume_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /jobs:
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Create a job description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "200":
+          description: Job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List all job descriptions
+      responses:
+        "200":
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+
+  /jobs/{job_id}:
+    get:
+      operationId: getJob
+      tags: [jobs]
+      summary: Get a job description by ID
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    delete:
+      operationId: deleteJob
+      tags: [jobs]
+      summary: Delete a job description
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /analysis/analyze:
+    post:
+      operationId: analyzeResume
+      tags: [analysis]
+      summary: Analyze a resume against a job description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeRequest"
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analysis/rank:
+    post:
+      operationId: rankCandidates
+      tags: [analysis]
+      summary: Rank multiple resumes against a job description
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RankRequest"
+      responses:
+        "200":
+          description: Ranked candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankedCandidate"
+
+  /analysis/results/{result_id}:
+    get:
+      operationId: getAnalysisResult
+      tags: [analysis]
+      summary: Get a stored analysis result
+      parameters:
+        - name: result_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Analysis result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalysisResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /analysis/results:
+    get:
+      operationId: listAnalysisResults
+      tags: [analysis]
+      summary: List all analysis results
+      responses:
+        "200":
+          description: List of analysis results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnalysisResultSummary"
+
+  /analysis/dashboard-stats:
+    get:
+      operationId: getDashboardStats
+      tags: [analysis]
+      summary: Get dashboard statistics
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
+    ResumeFileInput:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+        candidate_name:
+          type: string
+      required:
+        - file
+
     HealthStatus:
       type: object
       properties:
@@ -34,3 +300,352 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+        - detail
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    ResumeUploadResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        candidate_name:
+          type: string
+        filename:
+          type: string
+        extracted_text_preview:
+          type: string
+        skills_found:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - candidate_name
+        - filename
+        - extracted_text_preview
+        - skills_found
+        - created_at
+
+    Resume:
+      type: object
+      properties:
+        id:
+          type: integer
+        candidate_name:
+          type: string
+        filename:
+          type: string
+        skills_found:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+        analysis_count:
+          type: integer
+      required:
+        - id
+        - candidate_name
+        - filename
+        - skills_found
+        - created_at
+        - analysis_count
+
+    CreateJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        company:
+          type: string
+        description:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+      required:
+        - title
+        - description
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        company:
+          type: string
+        description:
+          type: string
+        required_skills:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - required_skills
+        - created_at
+
+    AnalyzeRequest:
+      type: object
+      properties:
+        resume_id:
+          type: integer
+        job_id:
+          type: integer
+      required:
+        - resume_id
+        - job_id
+
+    ScoreBreakdown:
+      type: object
+      properties:
+        skill_match:
+          type: number
+        semantic_similarity:
+          type: number
+        experience_match:
+          type: number
+        education_match:
+          type: number
+        keyword_coverage:
+          type: number
+      required:
+        - skill_match
+        - semantic_similarity
+        - experience_match
+        - education_match
+        - keyword_coverage
+
+    SkillGap:
+      type: object
+      properties:
+        matched_skills:
+          type: array
+          items:
+            type: string
+        missing_skills:
+          type: array
+          items:
+            type: string
+        extra_skills:
+          type: array
+          items:
+            type: string
+      required:
+        - matched_skills
+        - missing_skills
+        - extra_skills
+
+    Recommendation:
+      type: object
+      properties:
+        category:
+          type: string
+        suggestion:
+          type: string
+        priority:
+          type: string
+      required:
+        - category
+        - suggestion
+        - priority
+
+    ScoreExplanation:
+      type: object
+      properties:
+        overall:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        score_reasoning:
+          type: string
+      required:
+        - overall
+        - strengths
+        - weaknesses
+        - score_reasoning
+
+    AnalysisResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        resume_id:
+          type: integer
+        job_id:
+          type: integer
+        candidate_name:
+          type: string
+        job_title:
+          type: string
+        ats_score:
+          type: number
+        score_breakdown:
+          $ref: "#/components/schemas/ScoreBreakdown"
+        skill_gap:
+          $ref: "#/components/schemas/SkillGap"
+        recommendations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Recommendation"
+        explanation:
+          $ref: "#/components/schemas/ScoreExplanation"
+        created_at:
+          type: string
+      required:
+        - id
+        - resume_id
+        - job_id
+        - candidate_name
+        - job_title
+        - ats_score
+        - score_breakdown
+        - skill_gap
+        - recommendations
+        - explanation
+        - created_at
+
+    AnalysisResultSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        resume_id:
+          type: integer
+        job_id:
+          type: integer
+        candidate_name:
+          type: string
+        job_title:
+          type: string
+        ats_score:
+          type: number
+        created_at:
+          type: string
+      required:
+        - id
+        - resume_id
+        - job_id
+        - candidate_name
+        - job_title
+        - ats_score
+        - created_at
+
+    RankRequest:
+      type: object
+      properties:
+        resume_ids:
+          type: array
+          items:
+            type: integer
+        job_id:
+          type: integer
+      required:
+        - resume_ids
+        - job_id
+
+    RankedCandidate:
+      type: object
+      properties:
+        rank:
+          type: integer
+        resume_id:
+          type: integer
+        candidate_name:
+          type: string
+        ats_score:
+          type: number
+        skill_match:
+          type: number
+        missing_skills:
+          type: array
+          items:
+            type: string
+        matched_skills:
+          type: array
+          items:
+            type: string
+      required:
+        - rank
+        - resume_id
+        - candidate_name
+        - ats_score
+        - skill_match
+        - missing_skills
+        - matched_skills
+
+    DashboardStats:
+      type: object
+      properties:
+        total_resumes:
+          type: integer
+        total_jobs:
+          type: integer
+        total_analyses:
+          type: integer
+        average_ats_score:
+          type: number
+        top_missing_skills:
+          type: array
+          items:
+            type: object
+            properties:
+              skill:
+                type: string
+              count:
+                type: integer
+            required:
+              - skill
+              - count
+        recent_analyses:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisResultSummary"
+        score_distribution:
+          type: array
+          items:
+            type: object
+            properties:
+              range:
+                type: string
+              count:
+                type: integer
+            required:
+              - range
+              - count
+      required:
+        - total_resumes
+        - total_jobs
+        - total_analyses
+        - average_ats_score
+        - top_missing_skills
+        - recent_analyses
+        - score_distribution

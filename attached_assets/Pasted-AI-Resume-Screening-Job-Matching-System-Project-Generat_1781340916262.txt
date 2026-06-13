@@ -1,0 +1,278 @@
+AI Resume Screening & Job Matching System - Project Generation Prompt
+
+You are a senior AI Engineer and Full-Stack Developer.
+
+Build a production-ready AI Resume Screening & Job Matching System that analyzes resumes against job descriptions and provides an ATS-style compatibility score.
+
+Objective
+
+The application should:
+
+Allow users to upload resumes in PDF format.
+Accept a job description as text input.
+Extract information from resumes automatically.
+Identify:
+Skills
+Education
+Experience
+Certifications
+Projects
+Compare resume content with the job description.
+Generate a matching score from 0-100.
+Highlight missing skills.
+Suggest improvements for the resume.
+Explain why the score was assigned.
+Rank multiple resumes against the same job description.
+Technical Requirements
+Backend
+
+Use:
+
+Python
+FastAPI
+Sentence Transformers
+FAISS
+Scikit-learn
+PyPDF2 or pdfplumber
+
+Architecture:
+
+Resume Upload
+      ↓
+PDF Parser
+      ↓
+Text Extraction
+      ↓
+Skill Extraction
+      ↓
+Embedding Generation
+      ↓
+Semantic Similarity Search
+      ↓
+Scoring Engine
+      ↓
+Recommendation Engine
+      ↓
+API Response
+Frontend
+
+Use:
+
+React
+Tailwind CSS
+
+Pages:
+
+Dashboard
+Upload Resume
+Paste Job Description
+Analyze Button
+Results Page
+
+Display:
+
+ATS Score
+Skill Match Percentage
+Missing Skills
+Experience Match
+Education Match
+Recommendations
+
+Visualizations:
+
+Progress bars
+Pie charts
+Skill gap chart
+NLP Requirements
+
+Implement:
+
+Skill Extraction
+
+Extract technical skills such as:
+
+Python
+Java
+SQL
+TensorFlow
+PyTorch
+Docker
+Kubernetes
+AWS
+Azure
+React
+Node.js
+
+Use:
+
+spaCy
+Regex
+Custom Skill Dictionary
+Semantic Matching
+
+Use:
+
+sentence-transformers/all-MiniLM-L6-v2
+
+Generate embeddings for:
+
+Resume
+Job Description
+
+Calculate:
+
+Cosine Similarity
+ATS Score Formula
+
+Example:
+
+40% Skill Match
+30% Semantic Similarity
+20% Experience Match
+10% Education Match
+
+Return:
+
+{
+  "ats_score": 87,
+  "skill_match": 91,
+  "experience_match": 80,
+  "education_match": 85
+}
+Advanced Features
+
+Implement:
+
+Resume Ranking
+
+Upload multiple resumes.
+
+Return:
+
+Candidate A - 92
+Candidate B - 88
+Candidate C - 79
+Missing Skills Detection
+
+Example:
+
+Job Description:
+
+Python
+Docker
+AWS
+MLflow
+
+Resume:
+
+Python
+Docker
+
+Output:
+
+Missing:
+
+AWS
+MLflow
+Recommendation Engine
+
+Generate recommendations such as:
+
+Add cloud technologies.
+Include measurable achievements.
+Add machine learning deployment projects.
+Improve keyword coverage.
+Machine Learning Enhancements
+
+Include:
+
+TF-IDF matching
+Embedding similarity
+Hybrid scoring
+
+Combine results for better accuracy.
+
+Database
+
+Use SQLite.
+
+Tables:
+
+Users
+Resumes
+JobDescriptions
+AnalysisResults
+API Endpoints
+
+Create:
+
+POST /upload-resume
+POST /analyze
+POST /rank-candidates
+GET /results/{id}
+Deployment
+
+Containerize using Docker.
+
+Provide:
+
+Dockerfile
+docker-compose.yml
+
+Deploy-ready for:
+
+Render
+Hugging Face Spaces
+Railway
+Documentation
+
+Generate:
+
+Complete README
+Installation Guide
+Architecture Diagram
+API Documentation
+Project Structure
+Bonus Features (Important)
+
+Add:
+
+Resume keyword heatmap
+Resume strengths and weaknesses section
+Skill gap visualization
+Recruiter dashboard
+Export analysis to PDF
+Dark/Light mode
+Authentication system
+Analytics dashboard
+Code Quality Requirements
+Modular architecture
+Type hints
+Error handling
+Logging
+Unit tests
+Clean folder structure
+Production-ready code
+
+Folder Structure:
+
+resume-screening-system/
+│
+├── backend/
+├── frontend/
+├── models/
+├── data/
+├── tests/
+├── docs/
+├── docker/
+├── README.md
+└── requirements.txt
+To make it stand out on your resume
+
+Add two features that most students don't build:
+
+Explainable ATS Score
+Show exactly why the score is 82/100.
+Recruiters love explainability.
+Resume Improvement Generator
+Generate 5–10 actionable improvements based on the target job description.

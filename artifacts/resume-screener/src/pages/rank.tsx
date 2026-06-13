@@ -1,0 +1,231 @@
+import React, { useState } from "react";
+import { useListJobs, useListResumes, useRankCandidates } from "@workspace/api-client-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Trophy, ArrowRight, User } from "lucide-react";
+import { RankedCandidate } from "@workspace/api-client-react/src/generated/api.schemas";
+
+export default function RankPage() {
+  const { toast } = useToast();
+  const { data: jobs, isLoading: isLoadingJobs } = useListJobs();
+  const { data: resumes, isLoading: isLoadingResumes } = useListResumes();
+  
+  const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const [selectedResumeIds, setSelectedResumeIds] = useState<number[]>([]);
+  
+  const rankCandidates = useRankCandidates();
+  
+  const handleToggleResume = (id: number) => {
+    setSelectedResumeIds(prev => 
+      prev.includes(id) ? prev.filter(rId => rId !== id) : [...prev, id]
+    );
+  };
+  
+  const handleToggleAll = () => {
+    if (!resumes) return;
+    if (selectedResumeIds.length === resumes.length) {
+      setSelectedResumeIds([]);
+    } else {
+      setSelectedResumeIds(resumes.map(r => r.id));
+    }
+  };
+
+  const handleRank = () => {
+    if (!selectedJobId || selectedResumeIds.length === 0) return;
+    
+    rankCandidates.mutate({
+      data: {
+        job_id: parseInt(selectedJobId),
+        resume_ids: selectedResumeIds
+      }
+    }, {
+      onError: (err: any) => {
+        toast({ 
+          title: "Ranking failed", 
+          description: err?.message || "Failed to generate rankings.", 
+          variant: "destructive" 
+        });
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Candidate Ranking</h1>
+        <p className="text-muted-foreground mt-1">Select a job and a pool of candidates to generate a ranked leaderboard.</p>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Target Role</CardTitle>
+              <CardDescription>The job profile to evaluate against.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select value={selectedJobId} onValueChange={setSelectedJobId} disabled={isLoadingJobs}>
+                <SelectTrigger>
+                  <SelectValue placeholder={isLoadingJobs ? "Loading..." : "Select Job"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {jobs?.map(job => (
+                    <SelectItem key={job.id} value={job.id.toString()}>
+                      {job.title} {job.company ? `(${job.company})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Candidate Pool</CardTitle>
+                <CardDescription>Select resumes to rank.</CardDescription>
+              </div>
+              {resumes && resumes.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={handleToggleAll} className="h-8 text-xs">
+                  {selectedResumeIds.length === resumes.length ? "Deselect All" : "Select All"}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[300px] border-t border-border">
+                <div className="divide-y divide-border">
+                  {isLoadingResumes ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">Loading resumes...</div>
+                  ) : resumes?.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">No resumes available.</div>
+                  ) : (
+                    resumes?.map(resume => (
+                      <label key={resume.id} className="flex items-center gap-3 p-3 hover:bg-muted/50 cursor-pointer">
+                        <Checkbox 
+                          checked={selectedResumeIds.includes(resume.id)} 
+                          onCheckedChange={() => handleToggleResume(resume.id)}
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-medium text-sm">{resume.candidate_name}</span>
+                          <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">{resume.filename}</span>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+              <div className="p-4 bg-muted/20 border-t border-border flex items-center justify-between">
+                <span className="text-sm font-medium">{selectedResumeIds.length} selected</span>
+                <Button 
+                  onClick={handleRank}
+                  disabled={!selectedJobId || selectedResumeIds.length < 2 || rankCandidates.isPending}
+                  size="sm"
+                >
+                  {rankCandidates.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Rank Candidates
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-2">
+          <Card className="h-full flex flex-col">
+            <CardHeader className="bg-card border-b border-border">
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-primary" /> Leaderboard
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 p-0 flex flex-col">
+              {!rankCandidates.data && !rankCandidates.isPending && (
+                <div className="flex-1 flex flex-col items-center justify-center p-12 text-muted-foreground">
+                  <Trophy className="h-16 w-16 mb-4 opacity-10" />
+                  <p className="text-lg font-medium">No results yet</p>
+                  <p className="text-sm">Select a job and at least 2 candidates to generate a ranking.</p>
+                </div>
+              )}
+              
+              {rankCandidates.isPending && (
+                <div className="flex-1 flex flex-col items-center justify-center p-12 text-primary">
+                  <Loader2 className="h-12 w-12 mb-4 animate-spin" />
+                  <p className="text-lg font-medium animate-pulse">Running Comparative Analysis...</p>
+                </div>
+              )}
+
+              {rankCandidates.data && (
+                <div className="divide-y divide-border">
+                  {rankCandidates.data.map((candidate: RankedCandidate, index: number) => (
+                    <div key={candidate.resume_id} className={`p-4 flex gap-4 ${index === 0 ? 'bg-primary/5' : ''}`}>
+                      <div className="flex flex-col items-center justify-center min-w-[40px]">
+                        <span className={`text-2xl font-black font-serif ${index === 0 ? 'text-primary' : index === 1 ? 'text-zinc-400' : index === 2 ? 'text-amber-700/70 dark:text-amber-600/70' : 'text-muted-foreground'}`}>
+                          #{candidate.rank}
+                        </span>
+                      </div>
+                      
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-lg font-bold flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            {candidate.candidate_name}
+                          </h4>
+                          <div className="flex items-center gap-4">
+                            <div className="text-right">
+                              <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Skill Match</div>
+                              <div className="font-mono text-sm">{candidate.skill_match.toFixed(1)}%</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">ATS Score</div>
+                              <div className="font-mono text-xl font-bold text-primary">{candidate.ats_score}</div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-4 mt-3 pt-3 border-t border-border/50">
+                          <div>
+                            <div className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                              Matched Skills ({candidate.matched_skills.length})
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {candidate.matched_skills.slice(0, 5).map((s, i) => (
+                                <Badge key={i} variant="outline" className="text-[10px] py-0 border-emerald-500/30 bg-emerald-500/5">{s}</Badge>
+                              ))}
+                              {candidate.matched_skills.length > 5 && (
+                                <span className="text-xs text-muted-foreground ml-1">+{candidate.matched_skills.length - 5}</span>
+                              )}
+                              {candidate.matched_skills.length === 0 && <span className="text-xs text-muted-foreground italic">None</span>}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-destructive/80"></span>
+                              Missing Skills ({candidate.missing_skills.length})
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {candidate.missing_skills.slice(0, 5).map((s, i) => (
+                                <Badge key={i} variant="outline" className="text-[10px] py-0 border-destructive/30 text-destructive">{s}</Badge>
+                              ))}
+                              {candidate.missing_skills.length > 5 && (
+                                <span className="text-xs text-muted-foreground ml-1">+{candidate.missing_skills.length - 5}</span>
+                              )}
+                              {candidate.missing_skills.length === 0 && <span className="text-xs text-muted-foreground italic">None</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
