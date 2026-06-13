@@ -14,6 +14,7 @@ import AnalyzePage from "./pages/analyze";
 import RankPage from "./pages/rank";
 import ResultsPage from "./pages/results";
 import ResultDetailPage from "./pages/result-detail";
+import ComparePage from "./pages/compare";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ function Router() {
         <Route path="/jobs" component={JobsPage} />
         <Route path="/analyze" component={AnalyzePage} />
         <Route path="/rank" component={RankPage} />
+        <Route path="/compare" component={ComparePage} />
         <Route path="/results" component={ResultsPage} />
         <Route path="/results/:id" component={ResultDetailPage} />
         <Route component={NotFound} />

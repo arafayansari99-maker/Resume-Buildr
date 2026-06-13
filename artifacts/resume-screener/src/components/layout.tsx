@@ -6,7 +6,8 @@ import {
   Briefcase,
   PlaySquare,
   Trophy,
-  History
+  History,
+  GitCompare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
@@ -21,6 +22,7 @@ const navigation = [
   { name: "Jobs", href: "/jobs", icon: Briefcase },
   { name: "Analyze", href: "/analyze", icon: PlaySquare },
   { name: "Rank", href: "/rank", icon: Trophy },
+  { name: "Compare", href: "/compare", icon: GitCompare },
   { name: "Results", href: "/results", icon: History },
 ];
 
