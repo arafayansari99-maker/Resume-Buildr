@@ -122,9 +122,15 @@ export interface AnalysisResultSummary {
   created_at: string;
 }
 
-export interface RankRequest {
-  resume_ids: number[];
+export interface RankingRun {
+  id: number;
   job_id: number;
+  job_title: string;
+  candidate_count: number;
+  top_candidate_name?: string | null;
+  top_score?: number | null;
+  avg_score?: number | null;
+  created_at: string;
 }
 
 export interface RankedCandidate {
@@ -135,6 +141,23 @@ export interface RankedCandidate {
   skill_match: number;
   missing_skills: string[];
   matched_skills: string[];
+}
+
+export interface RankingRunDetail {
+  id: number;
+  job_id: number;
+  job_title: string;
+  candidate_count: number;
+  top_candidate_name?: string | null;
+  top_score?: number | null;
+  avg_score?: number | null;
+  created_at: string;
+  candidates: RankedCandidate[];
+}
+
+export interface RankRequest {
+  resume_ids: number[];
+  job_id: number;
 }
 
 export type DashboardStatsTopMissingSkillsItem = {

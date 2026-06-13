@@ -65,6 +65,33 @@ class AnalysisResultModel(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 
+class RankingRunModel(Base):
+    __tablename__ = "ranking_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
+    job_title = Column(String(255), nullable=False)
+    candidate_count = Column(Integer, nullable=False, default=0)
+    top_candidate_name = Column(String(255), nullable=True)
+    top_score = Column(Float, nullable=True)
+    avg_score = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class RankingRunResultModel(Base):
+    __tablename__ = "ranking_run_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    run_id = Column(Integer, ForeignKey("ranking_runs.id"), nullable=False)
+    rank = Column(Integer, nullable=False)
+    resume_id = Column(Integer, nullable=False)
+    candidate_name = Column(String(255), nullable=False)
+    ats_score = Column(Float, nullable=False)
+    skill_match = Column(Float, nullable=False)
+    matched_skills = Column(JSON, nullable=False, default=list)
+    missing_skills = Column(JSON, nullable=False, default=list)
+
+
 def create_tables() -> None:
     Base.metadata.create_all(bind=engine)
 

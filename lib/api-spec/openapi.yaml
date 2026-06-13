@@ -226,6 +226,46 @@ paths:
                 items:
                   $ref: "#/components/schemas/RankedCandidate"
 
+  /analysis/rankings:
+    get:
+      operationId: listRankingRuns
+      tags: [analysis]
+      summary: List all saved ranking runs
+      responses:
+        "200":
+          description: List of ranking runs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankingRun"
+
+  /analysis/rankings/{run_id}:
+    get:
+      operationId: getRankingRun
+      tags: [analysis]
+      summary: Get a saved ranking run with full candidate detail
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ranking run detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RankingRunDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /analysis/results/{result_id}:
     get:
       operationId: getAnalysisResult
@@ -586,6 +626,69 @@ components:
         - job_title
         - ats_score
         - created_at
+
+    RankingRun:
+      type: object
+      properties:
+        id:
+          type: integer
+        job_id:
+          type: integer
+        job_title:
+          type: string
+        candidate_count:
+          type: integer
+        top_candidate_name:
+          type: string
+          nullable: true
+        top_score:
+          type: number
+          nullable: true
+        avg_score:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+      required:
+        - id
+        - job_id
+        - job_title
+        - candidate_count
+        - created_at
+
+    RankingRunDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        job_id:
+          type: integer
+        job_title:
+          type: string
+        candidate_count:
+          type: integer
+        top_candidate_name:
+          type: string
+          nullable: true
+        top_score:
+          type: number
+          nullable: true
+        avg_score:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/RankedCandidate"
+      required:
+        - id
+        - job_id
+        - job_title
+        - candidate_count
+        - created_at
+        - candidates
 
     RankRequest:
       type: object

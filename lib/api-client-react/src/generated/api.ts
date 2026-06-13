@@ -31,6 +31,8 @@ import type {
   MessageResponse,
   RankRequest,
   RankedCandidate,
+  RankingRun,
+  RankingRunDetail,
   Resume,
   ResumeDetail,
   ResumeFileInput,
@@ -862,6 +864,160 @@ export const useRankCandidates = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getRankCandidatesMutationOptions(options));
     }
+
+export const getListRankingRunsUrl = () => {
+
+
+
+
+  return `/api/analysis/rankings`
+}
+
+/**
+ * @summary List all saved ranking runs
+ */
+export const listRankingRuns = async ( options?: RequestInit): Promise<RankingRun[]> => {
+
+  return customFetch<RankingRun[]>(getListRankingRunsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRankingRunsQueryKey = () => {
+    return [
+    `/api/analysis/rankings`
+    ] as const;
+    }
+
+
+export const getListRankingRunsQueryOptions = <TData = Awaited<ReturnType<typeof listRankingRuns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRankingRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRankingRunsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRankingRuns>>> = ({ signal }) => listRankingRuns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRankingRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRankingRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listRankingRuns>>>
+export type ListRankingRunsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all saved ranking runs
+ */
+
+export function useListRankingRuns<TData = Awaited<ReturnType<typeof listRankingRuns>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRankingRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRankingRunsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetRankingRunUrl = (runId: number,) => {
+
+
+
+
+  return `/api/analysis/rankings/${runId}`
+}
+
+/**
+ * @summary Get a saved ranking run with full candidate detail
+ */
+export const getRankingRun = async (runId: number, options?: RequestInit): Promise<RankingRunDetail> => {
+
+  return customFetch<RankingRunDetail>(getGetRankingRunUrl(runId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRankingRunQueryKey = (runId: number,) => {
+    return [
+    `/api/analysis/rankings/${runId}`
+    ] as const;
+    }
+
+
+export const getGetRankingRunQueryOptions = <TData = Awaited<ReturnType<typeof getRankingRun>>, TError = ErrorType<ErrorResponse>>(runId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRankingRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRankingRunQueryKey(runId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRankingRun>>> = ({ signal }) => getRankingRun(runId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(runId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRankingRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRankingRunQueryResult = NonNullable<Awaited<ReturnType<typeof getRankingRun>>>
+export type GetRankingRunQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a saved ranking run with full candidate detail
+ */
+
+export function useGetRankingRun<TData = Awaited<ReturnType<typeof getRankingRun>>, TError = ErrorType<ErrorResponse>>(
+ runId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRankingRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRankingRunQueryOptions(runId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetAnalysisResultUrl = (resultId: number,) => {
 

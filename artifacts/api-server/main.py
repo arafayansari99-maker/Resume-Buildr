@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session
 from database import (
     AnalysisResultModel,
     JobModel,
+    RankingRunModel,
+    RankingRunResultModel,
     ResumeModel,
     create_tables,
     get_db,
@@ -314,7 +316,87 @@ def rank_candidates(req: RankRequest, db: Session = Depends(get_db)):
     for i, r in enumerate(results, 1):
         r["rank"] = i
 
+    # Persist the ranking run
+    avg = sum(r["ats_score"] for r in results) / len(results) if results else 0.0
+    run = RankingRunModel(
+        job_id=job.id,
+        job_title=job.title,
+        candidate_count=len(results),
+        top_candidate_name=results[0]["candidate_name"] if results else None,
+        top_score=results[0]["ats_score"] if results else None,
+        avg_score=round(avg, 2),
+    )
+    db.add(run)
+    db.flush()
+
+    for r in results:
+        db.add(RankingRunResultModel(
+            run_id=run.id,
+            rank=r["rank"],
+            resume_id=r["resume_id"],
+            candidate_name=r["candidate_name"],
+            ats_score=r["ats_score"],
+            skill_match=r["skill_match"],
+            matched_skills=r["matched_skills"],
+            missing_skills=r["missing_skills"],
+        ))
+    db.commit()
+
     return results
+
+
+@app.get("/api/analysis/rankings")
+def list_ranking_runs(db: Session = Depends(get_db)):
+    runs = db.query(RankingRunModel).order_by(RankingRunModel.created_at.desc()).all()
+    return [
+        {
+            "id": run.id,
+            "job_id": run.job_id,
+            "job_title": run.job_title,
+            "candidate_count": run.candidate_count,
+            "top_candidate_name": run.top_candidate_name,
+            "top_score": run.top_score,
+            "avg_score": run.avg_score,
+            "created_at": _dt_str(run.created_at),
+        }
+        for run in runs
+    ]
+
+
+@app.get("/api/analysis/rankings/{run_id}")
+def get_ranking_run(run_id: int, db: Session = Depends(get_db)):
+    run = db.query(RankingRunModel).filter(RankingRunModel.id == run_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Ranking run not found")
+
+    candidates = (
+        db.query(RankingRunResultModel)
+        .filter(RankingRunResultModel.run_id == run_id)
+        .order_by(RankingRunResultModel.rank)
+        .all()
+    )
+    return {
+        "id": run.id,
+        "job_id": run.job_id,
+        "job_title": run.job_title,
+        "candidate_count": run.candidate_count,
+        "top_candidate_name": run.top_candidate_name,
+        "top_score": run.top_score,
+        "avg_score": run.avg_score,
+        "created_at": _dt_str(run.created_at),
+        "candidates": [
+            {
+                "rank": c.rank,
+                "resume_id": c.resume_id,
+                "candidate_name": c.candidate_name,
+                "ats_score": c.ats_score,
+                "skill_match": c.skill_match,
+                "matched_skills": c.matched_skills,
+                "missing_skills": c.missing_skills,
+            }
+            for c in candidates
+        ],
+    }
 
 
 @app.get("/api/analysis/results/{result_id}")

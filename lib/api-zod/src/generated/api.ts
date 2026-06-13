@@ -204,6 +204,50 @@ export const RankCandidatesResponse = zod.array(RankCandidatesResponseItem)
 
 
 /**
+ * @summary List all saved ranking runs
+ */
+export const ListRankingRunsResponseItem = zod.object({
+  "id": zod.number(),
+  "job_id": zod.number(),
+  "job_title": zod.string(),
+  "candidate_count": zod.number(),
+  "top_candidate_name": zod.string().nullish(),
+  "top_score": zod.number().nullish(),
+  "avg_score": zod.number().nullish(),
+  "created_at": zod.string()
+})
+export const ListRankingRunsResponse = zod.array(ListRankingRunsResponseItem)
+
+
+/**
+ * @summary Get a saved ranking run with full candidate detail
+ */
+export const GetRankingRunParams = zod.object({
+  "run_id": zod.coerce.number()
+})
+
+export const GetRankingRunResponse = zod.object({
+  "id": zod.number(),
+  "job_id": zod.number(),
+  "job_title": zod.string(),
+  "candidate_count": zod.number(),
+  "top_candidate_name": zod.string().nullish(),
+  "top_score": zod.number().nullish(),
+  "avg_score": zod.number().nullish(),
+  "created_at": zod.string(),
+  "candidates": zod.array(zod.object({
+  "rank": zod.number(),
+  "resume_id": zod.number(),
+  "candidate_name": zod.string(),
+  "ats_score": zod.number(),
+  "skill_match": zod.number(),
+  "missing_skills": zod.array(zod.string()),
+  "matched_skills": zod.array(zod.string())
+}))
+})
+
+
+/**
  * @summary Get a stored analysis result
  */
 export const GetAnalysisResultParams = zod.object({

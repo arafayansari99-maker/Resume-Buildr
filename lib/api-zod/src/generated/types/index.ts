@@ -18,6 +18,8 @@ export * from './healthStatus';
 export * from './job';
 export * from './messageResponse';
 export * from './rankedCandidate';
+export * from './rankingRun';
+export * from './rankingRunDetail';
 export * from './rankRequest';
 export * from './recommendation';
 export * from './resume';
