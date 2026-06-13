@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trophy, User } from "lucide-react";
+import { Loader2, Trophy, User, Download } from "lucide-react";
+import { exportRankingPDF } from "@/lib/export-pdf";
 
 export default function RankPage() {
   const { toast } = useToast();
@@ -17,8 +18,21 @@ export default function RankPage() {
   
   const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [selectedResumeIds, setSelectedResumeIds] = useState<number[]>([]);
+  const [exporting, setExporting] = useState(false);
   
   const rankCandidates = useRankCandidates();
+
+  const selectedJobTitle = jobs?.find(j => j.id.toString() === selectedJobId)?.title ?? "Unknown Role";
+
+  const handleExportRanking = () => {
+    if (!rankCandidates.data || rankCandidates.data.length === 0) return;
+    setExporting(true);
+    try {
+      exportRankingPDF(rankCandidates.data as RankedCandidate[], selectedJobTitle);
+    } finally {
+      setExporting(false);
+    }
+  };
   
   const handleToggleResume = (id: number) => {
     setSelectedResumeIds(prev => 
@@ -136,10 +150,25 @@ export default function RankPage() {
 
         <div className="lg:col-span-2">
           <Card className="h-full flex flex-col">
-            <CardHeader className="bg-card border-b border-border">
+            <CardHeader className="bg-card border-b border-border flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-primary" /> Leaderboard
               </CardTitle>
+              {rankCandidates.data && rankCandidates.data.length > 0 && (
+                <Button
+                  onClick={handleExportRanking}
+                  disabled={exporting}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 shrink-0"
+                >
+                  {exporting ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Generating…</>
+                  ) : (
+                    <><Download className="h-4 w-4" /> Export PDF</>
+                  )}
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="flex-1 p-0 flex flex-col">
               {!rankCandidates.data && !rankCandidates.isPending && (

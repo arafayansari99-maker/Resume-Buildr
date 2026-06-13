@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import type { AnalysisResult } from "@workspace/api-client-react";
+import type { AnalysisResult, RankedCandidate } from "@workspace/api-client-react";
 
 // ── Palette ──────────────────────────────────────────────────────────────────
 const C = {
@@ -393,4 +393,287 @@ export function exportAnalysisPDF(result: AnalysisResult): void {
   // ── Save ──────────────────────────────────────────────────────────────────
   const filename = `RecruitIntel_${result.candidate_name.replace(/\s+/g, "_")}_${result.job_title.replace(/\s+/g, "_")}.pdf`;
   doc.save(filename);
+}
+
+// ── Bulk Ranking Export ───────────────────────────────────────────────────────
+
+export function exportRankingPDF(candidates: RankedCandidate[], jobTitle: string): void {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
+  // medal colors for top 3
+  const medalColor = (rank: number): [number, number, number] => {
+    if (rank === 1) return C.primary;
+    if (rank === 2) return [148, 163, 184]; // silver
+    if (rank === 3) return [180, 120, 60];  // bronze
+    return C.muted;
+  };
+
+  // ── Page 1 — Summary & Leaderboard ───────────────────────────────────────
+
+  // Header bar
+  rgb(doc, C.ink, "fill");
+  doc.rect(0, 0, PAGE_W, 36, "F");
+
+  rgb(doc, C.primary, "text");
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("RecruitIntel", MARGIN, 14);
+
+  rgb(doc, C.faint, "text");
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text("CANDIDATE RANKING REPORT", MARGIN, 20);
+
+  rgb(doc, C.faint, "text");
+  doc.setFontSize(8);
+  doc.text(dateStr, PAGE_W - MARGIN, 14, { align: "right" });
+
+  rgb(doc, C.white, "text");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  const jobLabel = doc.splitTextToSize(jobTitle, PAGE_W - MARGIN * 2 - 20);
+  doc.text(jobLabel[0], MARGIN, 29);
+
+  let y = 46;
+
+  // ── Summary stats row ─────────────────────────────────────────────────────
+  const avgScore = candidates.reduce((s, c) => s + c.ats_score, 0) / candidates.length;
+  const topScore = candidates[0]?.ats_score ?? 0;
+  const topName  = candidates[0]?.candidate_name ?? "—";
+  const weakCount = candidates.filter(c => c.ats_score < 50).length;
+
+  const statCols: [string, string][] = [
+    ["CANDIDATES RANKED", candidates.length.toString()],
+    ["AVERAGE ATS SCORE",  avgScore.toFixed(1)],
+    ["TOP SCORE",          topScore.toFixed(1)],
+    ["BELOW THRESHOLD",    `${weakCount} (< 50)`],
+  ];
+
+  rgb(doc, C.surface, "fill");
+  rgb(doc, C.border, "draw");
+  doc.setLineWidth(0.3);
+  doc.roundedRect(MARGIN, y, CONTENT_W, 20, 2, 2, "FD");
+
+  const cw = CONTENT_W / statCols.length;
+  statCols.forEach(([label, val], idx) => {
+    const cx = MARGIN + 4 + idx * cw;
+    rgb(doc, C.muted, "text");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(label, cx, y + 6);
+    rgb(doc, idx === 2 ? scoreColor(topScore) : C.ink, "text");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(val, cx, y + 14);
+  });
+
+  y += 28;
+
+  // ── Top performer callout ─────────────────────────────────────────────────
+  y = checkPage(doc, y, 16);
+  rgb(doc, C.primary, "fill");
+  doc.roundedRect(MARGIN, y, CONTENT_W, 14, 2, 2, "F");
+  rgb(doc, C.white, "text");
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.text("TOP CANDIDATE", MARGIN + 5, y + 5);
+  doc.setFontSize(10);
+  doc.text(`${topName}  —  ${topScore.toFixed(1)} / 100`, MARGIN + 5, y + 11);
+  y += 20;
+
+  // ── Leaderboard table ─────────────────────────────────────────────────────
+  y = drawSectionHeader(doc, y, "Leaderboard — All Candidates");
+
+  // Table header
+  y = checkPage(doc, y, 8);
+  rgb(doc, C.surface, "fill");
+  doc.rect(MARGIN, y, CONTENT_W, 7, "F");
+
+  const COL = {
+    rank:    MARGIN,
+    name:    MARGIN + 12,
+    score:   MARGIN + 80,
+    skill:   MARGIN + 108,
+    bar:     MARGIN + 132,
+  };
+
+  rgb(doc, C.muted, "text");
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.text("#",             COL.rank  + 2, y + 5);
+  doc.text("CANDIDATE",     COL.name,      y + 5);
+  doc.text("ATS SCORE",     COL.score,     y + 5);
+  doc.text("SKILL MATCH",   COL.skill,     y + 5);
+  doc.text("SCORE BAR",     COL.bar,       y + 5);
+  y += 9;
+
+  // Divider
+  rgb(doc, C.border, "draw");
+  doc.setLineWidth(0.3);
+  doc.line(MARGIN, y - 1, PAGE_W - MARGIN, y - 1);
+
+  candidates.forEach((c, idx) => {
+    const rowH = 12;
+    y = checkPage(doc, y, rowH + 2);
+
+    // Zebra stripe
+    if (idx % 2 === 0) {
+      rgb(doc, [250, 252, 255], "fill");
+      doc.rect(MARGIN, y, CONTENT_W, rowH, "F");
+    }
+
+    // Rank badge
+    const mc = medalColor(c.rank);
+    rgb(doc, mc, "fill");
+    doc.roundedRect(COL.rank, y + 2, 9, 8, 1.5, 1.5, "F");
+    rgb(doc, C.white, "text");
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "bold");
+    doc.text(c.rank.toString(), COL.rank + 4.5, y + 7.5, { align: "center" });
+
+    // Candidate name
+    rgb(doc, C.ink, "text");
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    const nameLines = doc.splitTextToSize(c.candidate_name, 60);
+    doc.text(nameLines[0], COL.name, y + 7.5);
+
+    // ATS score
+    rgb(doc, scoreColor(c.ats_score), "text");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(c.ats_score.toFixed(1), COL.score + 8, y + 7.5, { align: "right" });
+    rgb(doc, C.muted, "text");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text("/ 100", COL.score + 9, y + 7.5);
+
+    // Skill match
+    rgb(doc, C.ink, "text");
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${c.skill_match.toFixed(1)}%`, COL.skill + 14, y + 7.5, { align: "right" });
+
+    // Score bar
+    const barW = CONTENT_W - (COL.bar - MARGIN) - 2;
+    drawProgressBar(doc, COL.bar, y + 4.5, barW, c.ats_score, 3);
+
+    y += rowH;
+
+    // Row divider
+    rgb(doc, C.border, "draw");
+    doc.setLineWidth(0.15);
+    doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+  });
+
+  y += 8;
+
+  // ── Per-candidate skill gap cards ─────────────────────────────────────────
+  y = drawSectionHeader(doc, y, "Skill Gap Detail — All Candidates");
+
+  candidates.forEach((c) => {
+    const cardMinH = 36;
+    y = checkPage(doc, y, cardMinH);
+
+    // Card border
+    rgb(doc, C.surface, "fill");
+    rgb(doc, C.border, "draw");
+    doc.setLineWidth(0.3);
+
+    // Left accent bar (color by rank)
+    const mc = medalColor(c.rank);
+    rgb(doc, mc, "fill");
+    doc.roundedRect(MARGIN, y, 2.5, cardMinH, 0.5, 0.5, "F");
+
+    // Candidate header
+    rgb(doc, C.ink, "text");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(`#${c.rank}  ${c.candidate_name}`, MARGIN + 6, y + 6);
+
+    rgb(doc, scoreColor(c.ats_score), "text");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${c.ats_score.toFixed(1)}`, PAGE_W - MARGIN, y + 6, { align: "right" });
+    rgb(doc, C.muted, "text");
+    doc.setFontSize(7);
+    doc.text("ATS", PAGE_W - MARGIN, y + 11, { align: "right" });
+
+    // Score bar under header
+    drawProgressBar(doc, MARGIN + 6, y + 13, CONTENT_W - 8, c.ats_score, 2.5);
+
+    let chipY = y + 19;
+
+    // Matched skills
+    rgb(doc, C.primaryDark, "text");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.text(`MATCHED  (${c.matched_skills.length})`, MARGIN + 6, chipY);
+    chipY += 5;
+
+    if (c.matched_skills.length === 0) {
+      rgb(doc, C.faint, "text");
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "italic");
+      doc.text("None", MARGIN + 6, chipY + 3);
+      chipY += 7;
+    } else {
+      let cx = MARGIN + 6;
+      for (const skill of c.matched_skills) {
+        const chipW = doc.getTextWidth(skill) + 8;
+        if (cx + chipW > PAGE_W - MARGIN) {
+          cx = MARGIN + 6;
+          chipY += 8;
+          chipY = checkPage(doc, chipY, 8);
+        }
+        drawChip(doc, cx, chipY + 4, skill, C.emeraldBg, C.primaryDark);
+        cx += chipW;
+      }
+      chipY += 9;
+    }
+
+    // Missing skills
+    chipY = checkPage(doc, chipY, 14);
+    rgb(doc, C.redText, "text");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.text(`MISSING  (${c.missing_skills.length})`, MARGIN + 6, chipY);
+    chipY += 5;
+
+    if (c.missing_skills.length === 0) {
+      rgb(doc, C.faint, "text");
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "italic");
+      doc.text("None — full coverage", MARGIN + 6, chipY + 3);
+      chipY += 7;
+    } else {
+      let cx = MARGIN + 6;
+      for (const skill of c.missing_skills) {
+        const chipW = doc.getTextWidth(skill) + 8;
+        if (cx + chipW > PAGE_W - MARGIN) {
+          cx = MARGIN + 6;
+          chipY += 8;
+          chipY = checkPage(doc, chipY, 8);
+        }
+        drawChip(doc, cx, chipY + 4, skill, C.redBg, C.redText);
+        cx += chipW;
+      }
+      chipY += 9;
+    }
+
+    y = chipY + 6;
+
+    // Divider between cards
+    rgb(doc, C.border, "draw");
+    doc.setLineWidth(0.2);
+    doc.line(MARGIN, y - 3, PAGE_W - MARGIN, y - 3);
+  });
+
+  // ── Footer ────────────────────────────────────────────────────────────────
+  drawPageFooter(doc);
+
+  const safeJob = jobTitle.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
+  doc.save(`RecruitIntel_Ranking_${safeJob}_${now.getFullYear()}.pdf`);
 }
