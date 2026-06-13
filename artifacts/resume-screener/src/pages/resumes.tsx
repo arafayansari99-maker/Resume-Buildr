@@ -129,11 +129,7 @@ function UploadDialog() {
   const handleUpload = () => {
     if (!file || !candidateName) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('candidate_name', candidateName);
-
-    uploadResume.mutate({ data: formData as any }, {
+    uploadResume.mutate({ data: { file, candidate_name: candidateName } }, {
       onSuccess: () => {
         toast({ title: "Resume uploaded and parsed successfully." });
         queryClient.invalidateQueries({ queryKey: getListResumesQueryKey() });
