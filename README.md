@@ -2,7 +2,7 @@
 
 An **AI-powered ATS (Applicant Tracking System)** that analyzes resumes against job descriptions, generates explainable compatibility scores, and ranks multiple candidates using advanced NLP and ML techniques.
 
-**Live Demo:** [Resume-Buildr on Vercel + Render](#deployment)
+**Live Demo:** https://resume-buildr--arafayansari99.replit.app/dashboard
 
 ---
 
