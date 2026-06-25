@@ -6,11 +6,16 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+
+
+# --- Compatibility / legacy routes -------------------------------------------------
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from database import (
+
+
     AnalysisResultModel,
     JobModel,
     RankingRunModel,
@@ -31,9 +36,18 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Resume Screening API", version="0.1.0")
 
+# Configure CORS origins via `ALLOWED_ORIGINS` env var (comma-separated).
+# Default: allow all origins for local development. In production, set
+# `ALLOWED_ORIGINS` to the allowed host(s), e.g. "https://example.com".
+raw_allowed = os.getenv("ALLOWED_ORIGINS")
+if raw_allowed:
+    allowed_origins = [o.strip() for o in raw_allowed.split(",") if o.strip()]
+else:
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -172,8 +186,10 @@ def import_job_from_url(req: JobImportRequest):
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
+        # Log the full exception on the server, but do not echo internal
+        # exception details (or user-provided URLs) back to the client.
         logger.exception("unexpected scrape error for %s", req.url)
-        raise HTTPException(status_code=400, detail=f"Failed to extract job data: {exc}")
+        raise HTTPException(status_code=400, detail="Failed to extract job data")
 
     # Auto-extract skills from the description
     skills = extract_skills(data.get("description") or "")
@@ -186,6 +202,12 @@ def import_job_from_url(req: JobImportRequest):
         "required_skills": skills,
         "source_url":     data.get("source_url") or req.url,
     }
+
+
+@app.post("/api/jobs/add-from-url")
+def import_job_from_url_legacy(req: JobImportRequest):
+    """Legacy compatibility: /api/jobs/add-from-url -> /api/jobs/import-url"""
+    return import_job_from_url(req)
 
 
 @app.post("/api/jobs")
@@ -391,6 +413,12 @@ def list_ranking_runs(db: Session = Depends(get_db)):
     ]
 
 
+@app.get("/api/ranking-runs")
+def list_ranking_runs_legacy(db: Session = Depends(get_db)):
+    """Legacy compatibility: /api/ranking-runs -> /api/analysis/rankings"""
+    return list_ranking_runs(db)
+
+
 @app.get("/api/analysis/rankings/{run_id}")
 def get_ranking_run(run_id: int, db: Session = Depends(get_db)):
     run = db.query(RankingRunModel).filter(RankingRunModel.id == run_id).first()
@@ -466,6 +494,12 @@ def list_analysis_results(db: Session = Depends(get_db)):
         }
         for a in analyses
     ]
+
+
+@app.get("/api/analysis-results")
+def list_analysis_results_legacy(db: Session = Depends(get_db)):
+    """Legacy compatibility: /api/analysis-results -> /api/analysis/results"""
+    return list_analysis_results(db)
 
 
 @app.get("/api/analysis/dashboard-stats")

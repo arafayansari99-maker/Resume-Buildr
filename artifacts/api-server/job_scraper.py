@@ -90,7 +90,8 @@ def _extract_jsonld(soup: BeautifulSoup) -> Optional[dict[str, Any]]:
             for item in items:
                 if isinstance(item, dict) and item.get("@type") in ("JobPosting", "jobPosting"):
                     return item
-        except Exception:
+        except Exception as e:
+            logger.debug("JSON-LD parse error: %s", e)
             continue
     return None
 
@@ -274,7 +275,8 @@ def _parse_generic(soup: BeautifulSoup, html: str) -> dict[str, Any]:
     try:
         text = trafilatura.extract(html, include_tables=False, no_fallback=False) or ""
         result["description"] = _clean(text)
-    except Exception:
+    except Exception as e:
+        logger.debug("trafilatura extraction failed: %s", e)
         result["description"] = _clean(soup.get_text(separator=" "))
 
     return result
@@ -293,7 +295,10 @@ def scrape_job_from_url(url: str) -> dict[str, Any]:
 
     html = _fetch(url)
     if not html:
-        raise ValueError(f"Could not fetch the page at {url}. The site may require login or block automated access.")
+        # Avoid echoing the provided URL back in the error message (prevents accidental
+        # disclosure or injection via error responses). Log the URL instead.
+        logger.warning("Could not fetch page for URL: %s", url)
+        raise ValueError("Could not fetch the page. The site may require login or block automated access.")
 
     soup = BeautifulSoup(html, "lxml")
     result: dict[str, Any] = {"title": "", "company": "", "location": "", "description": "", "source_url": url}
@@ -331,8 +336,9 @@ def scrape_job_from_url(url: str) -> dict[str, Any]:
             text = trafilatura.extract(html, include_tables=False, no_fallback=False) or ""
             if text:
                 result["description"] = _clean(text)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("trafilatura extraction failed: %s", e)
+            result["description"] = _clean(soup.get_text(separator=" "))
 
     # ── 4. Validate ──
     if not result["title"] and not result["description"]:
