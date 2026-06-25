@@ -308,7 +308,7 @@ Built by [Your Name] as a portfolio project showcasing full-stack AI/ML engineer
 
 **Contact:**
 - GitHub: [@arafayansari99-maker](https://github.com/arafayansari99-maker)
-- Email: [your-email@example.com]
+- Email: [a.rafayansari99@gmail.com]
 
 ---
 
