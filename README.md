@@ -220,32 +220,6 @@ Final Score = (0.40 × Skill Match)
 
 ---
 
-## 🌐 Deployment
-
-### Live URLs
-- **Frontend:** https://resume-buildr.vercel.app (Vercel)
-- **Backend:** https://resume-buildr-api.onrender.com (Render)
-
-### Deploy on Render (Backend)
-
-1. Push code to GitHub
-2. Create Render account → New Web Service
-3. Connect GitHub repo, set root to `artifacts/api-server`
-4. Build: `pip install -r requirements.txt`
-5. Start: `python -m uvicorn main:app --host 0.0.0.0 --port $PORT`
-6. Add env var: `ALLOWED_ORIGINS=https://resume-buildr.vercel.app`
-
-### Deploy on Vercel (Frontend)
-
-1. Create Vercel account → Import GitHub repo
-2. Root directory: `artifacts/resume-screener`
-3. Framework: Vite
-4. Build: `pnpm install && pnpm run build`
-5. Output: `dist/public`
-6. Env vars: `PORT=5173`, `BASE_PATH=/`
-
----
-
 ## 📊 What Recruiters Should Know
 
 ### Why This Project?
@@ -304,12 +278,12 @@ MIT
 
 ## 🤝 Author
 
-Built by [Your Name] as a portfolio project showcasing full-stack AI/ML engineering.
+Built by Abdur Rafay as a portfolio project showcasing full-stack AI/ML engineering.
 
 **Contact:**
 - GitHub: [@arafayansari99-maker](https://github.com/arafayansari99-maker)
 - Email: [a.rafayansari99@gmail.com]
-
+- LinkedIn: [https://www.linkedin.com/in/abdur-rafay-1x/]
 ---
 
 ## 🚀 Next Steps
