@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -16,6 +17,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
+logger = logging.getLogger(__name__)
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "resume_screening.db")
 configured_database_url = os.getenv("DATABASE_URL", "").strip()
 DATABASE_URL = configured_database_url or f"sqlite:///{DB_PATH}"
@@ -27,10 +30,24 @@ if DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-if DATABASE_URL.startswith("sqlite:"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
+
+def _build_engine():
+    try:
+        if DATABASE_URL.startswith("sqlite:"):
+            return create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+        return create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
+    except Exception as exc:  # pragma: no cover - defensive for serverless startup
+        fallback_url = f"sqlite:///{DB_PATH}"
+        logger.warning(
+            "Database connection failed for %s. Falling back to local SQLite at %s. Error: %s",
+            DATABASE_URL,
+            fallback_url,
+            exc,
+        )
+        return create_engine(fallback_url, connect_args={"check_same_thread": False})
+
+
+engine = _build_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
