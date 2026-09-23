@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, Calendar, User, Briefcase } from "lucide-react";
+import { ApiError } from "@/components/api-error";
 
 export default function ResultsPage() {
-  const { data: results, isLoading } = useListAnalysisResults();
+  const { data: results, isLoading, isError, error, refetch } = useListAnalysisResults();
 
   return (
     <div className="space-y-6">
@@ -16,7 +17,9 @@ export default function ResultsPage() {
         <p className="text-muted-foreground mt-1">Review past evaluations and candidate matches.</p>
       </div>
 
-      <Card>
+      {isError && <ApiError message={error instanceof Error ? error.message : undefined} onRetry={refetch} />}
+
+      {!isError && <Card>
         <CardContent className="p-0">
           <div className="divide-y divide-border">
             {isLoading ? (
@@ -83,7 +86,7 @@ export default function ResultsPage() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }

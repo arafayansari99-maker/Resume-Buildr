@@ -6,9 +6,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Users, Briefcase, Activity, Target } from "lucide-react";
 import { Link } from "wouter";
+import { ApiError } from "@/components/api-error";
 
 export default function DashboardPage() {
-  const { data: stats, isLoading } = useGetDashboardStats();
+  const { data: stats, isLoading, isError, error, refetch } = useGetDashboardStats();
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight">Command Center</h1>
+        <ApiError message={error instanceof Error ? error.message : undefined} onRetry={refetch} />
+      </div>
+    );
+  }
 
   if (isLoading || !stats) {
     return (

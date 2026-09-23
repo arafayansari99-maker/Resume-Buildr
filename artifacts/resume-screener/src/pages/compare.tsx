@@ -4,7 +4,7 @@ import {
   useListJobs,
   useAnalyzeResume,
 } from "@workspace/api-client-react";
-import type { AnalysisResult } from "@workspace/api-client-react";
+import type { AnalysisResult, Resume } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/use-notifications";
+import { ApiError } from "@/components/api-error";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -284,8 +285,10 @@ function SlotCard({
 // ── Main page ────────────────────────────────────────────────────────────────
 
 export default function ComparePage() {
-  const { data: resumes } = useListResumes();
-  const { data: jobs } = useListJobs();
+  const resumesQuery = useListResumes();
+  const jobsQuery = useListJobs();
+  const resumes = resumesQuery.data as Resume[] | undefined;
+  const { data: jobs } = jobsQuery;
   const { addNotification } = useNotifications();
   const analyzeResume = useAnalyzeResume();
 
@@ -332,6 +335,19 @@ export default function ComparePage() {
     : winner === "B"
     ? slotB.result?.candidate_name
     : null;
+
+  if (resumesQuery.isError || jobsQuery.isError) {
+    const queryError = resumesQuery.error ?? jobsQuery.error;
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight">Compare Candidates</h1>
+        <ApiError
+          message={queryError instanceof Error ? queryError.message : undefined}
+          onRetry={() => { void resumesQuery.refetch(); void jobsQuery.refetch(); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

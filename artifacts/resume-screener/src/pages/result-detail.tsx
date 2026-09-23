@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, CheckCircle2, AlertCircle, Info, ThumbsUp, TrendingUp, Download, Loader2 } from "lucide-react";
 import { exportAnalysisPDF } from "@/lib/export-pdf";
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from "recharts";
+import { ApiError } from "@/components/api-error";
 
 export default function ResultDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -42,8 +43,9 @@ export default function ResultDetailPage() {
 
   if (error || !result) {
     return (
-      <div className="p-12 text-center text-destructive">
-        Failed to load analysis result.
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight">Analysis Report</h1>
+        <ApiError message={error instanceof Error ? error.message : "Analysis result not found."} />
       </div>
     );
   }

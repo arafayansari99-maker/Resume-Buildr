@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
+import { ApiError } from "@/components/api-error";
 import { Loader2, Trophy, User, Download, History, ChevronRight, ArrowLeft } from "lucide-react";
 import { exportRankingPDF } from "@/lib/export-pdf";
 
@@ -122,9 +123,12 @@ function HistoryRow({ run, isActive, onClick }: { run: RankingRun; isActive: boo
 export default function RankPage() {
   const { toast } = useToast();
   const { addNotification } = useNotifications();
-  const { data: jobs, isLoading: isLoadingJobs } = useListJobs();
-  const { data: resumes, isLoading: isLoadingResumes } = useListResumes();
-  const { data: history, isLoading: isLoadingHistory } = useListRankingRuns();
+  const jobsQuery = useListJobs();
+  const resumesQuery = useListResumes();
+  const historyQuery = useListRankingRuns();
+  const { data: jobs, isLoading: isLoadingJobs } = jobsQuery;
+  const { data: resumes, isLoading: isLoadingResumes } = resumesQuery;
+  const { data: history, isLoading: isLoadingHistory } = historyQuery;
 
   const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [selectedResumeIds, setSelectedResumeIds] = useState<number[]>([]);
@@ -204,6 +208,19 @@ export default function RankPage() {
 
   const hasResults = Boolean(displayCandidates && displayCandidates.length > 0);
   const isPending = isViewingHistory ? isLoadingRun : rankCandidates.isPending;
+
+  if (jobsQuery.isError || resumesQuery.isError || historyQuery.isError) {
+    const queryError = jobsQuery.error ?? resumesQuery.error ?? historyQuery.error;
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight">Candidate Ranking</h1>
+        <ApiError
+          message={queryError instanceof Error ? queryError.message : undefined}
+          onRetry={() => { void jobsQuery.refetch(); void resumesQuery.refetch(); void historyQuery.refetch(); }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

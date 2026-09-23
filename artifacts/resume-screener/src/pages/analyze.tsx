@@ -8,14 +8,17 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
 import { PlaySquare, Loader2, FileText, Briefcase } from "lucide-react";
+import { ApiError } from "@/components/api-error";
 
 export default function AnalyzePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { addNotification } = useNotifications();
   
-  const { data: resumes, isLoading: isLoadingResumes } = useListResumes();
-  const { data: jobs, isLoading: isLoadingJobs } = useListJobs();
+  const resumesQuery = useListResumes();
+  const jobsQuery = useListJobs();
+  const { data: resumes, isLoading: isLoadingResumes } = resumesQuery;
+  const { data: jobs, isLoading: isLoadingJobs } = jobsQuery;
   
   const [selectedResumeId, setSelectedResumeId] = useState<string>("");
   const [selectedJobId, setSelectedJobId] = useState<string>("");
@@ -58,7 +61,16 @@ export default function AnalyzePage() {
         <p className="text-muted-foreground mt-1">Match a specific resume against a job description to generate a detailed report.</p>
       </div>
 
-      <Card className="border-primary/20">
+      {(resumesQuery.isError || jobsQuery.isError) && (
+        <ApiError
+          message={(resumesQuery.error ?? jobsQuery.error) instanceof Error
+            ? (resumesQuery.error ?? jobsQuery.error)?.message
+            : undefined}
+          onRetry={() => { void resumesQuery.refetch(); void jobsQuery.refetch(); }}
+        />
+      )}
+
+      {!resumesQuery.isError && !jobsQuery.isError && <Card className="border-primary/20">
         <CardHeader className="bg-primary/5 border-b border-border pb-6">
           <CardTitle className="text-xl flex items-center gap-2">
             <PlaySquare className="h-5 w-5 text-primary" /> New Analysis Request
@@ -142,7 +154,7 @@ export default function AnalyzePage() {
             )}
           </Button>
         </CardFooter>
-      </Card>
+      </Card>}
       
       {analyzeResume.isPending && (
         <div className="text-center p-8 space-y-4 animate-in fade-in slide-in-from-bottom-4">

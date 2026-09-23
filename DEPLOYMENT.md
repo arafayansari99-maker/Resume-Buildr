@@ -8,7 +8,7 @@ This guide walks through deploying Resume-Buildr to production using **Render** 
 
 | Component | Platform | URL | Cost |
 |-----------|----------|-----|------|
-| Backend (FastAPI) | Render | https://resume-buildr-api.onrender.com | Free tier available |
+| Backend (FastAPI) | Render | Set this to your deployed Render service URL | Free tier available |
 | Frontend (React) | Vercel | https://resume-buildr.vercel.app | Free tier available |
 | Database | SQLite (on Render) | N/A | Included |
 
@@ -58,7 +58,7 @@ This guide walks through deploying Resume-Buildr to production using **Render** 
 
 Once deployed, Render will assign a public URL like:
 ```
-https://resume-buildr-api.onrender.com
+https://your-render-service.onrender.com
 ```
 
 **Save this URL** — you'll need it for the frontend deployment.
@@ -86,7 +86,7 @@ https://resume-buildr-api.onrender.com
 2. Add variables from [`artifacts/resume-screener/.env.vercel`](artifacts/resume-screener/.env.vercel):
    - `PORT=5173`
    - `BASE_PATH=/`
-   - `VITE_API_URL=https://resume-buildr-api.onrender.com` (use your Render URL from Step 1.3)
+  - `VITE_API_URL=https://your-render-service.onrender.com` (use the actual Render URL from Step 1.3)
 
 3. Click **Deploy**
 
@@ -94,7 +94,7 @@ https://resume-buildr-api.onrender.com
 
 Once deployed, Vercel will assign a public URL like:
 ```
-https://resume-buildr.vercel.app
+https://your-vercel-project.vercel.app
 ```
 
 ---
@@ -120,8 +120,8 @@ Now that the frontend is deployed, update the backend to allow it:
 
 Once both are deployed:
 - **Frontend:** https://resume-buildr.vercel.app
-- **Backend API:** https://resume-buildr-api.onrender.com/api
-- **API Docs:** https://resume-buildr-api.onrender.com/docs (Swagger UI)
+- **Backend API:** `https://your-render-service.onrender.com/api`
+- **API Docs:** `https://your-render-service.onrender.com/docs` (Swagger UI)
 
 ---
 

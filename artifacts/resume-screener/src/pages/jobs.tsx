@@ -26,11 +26,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
+import { ApiError } from "@/components/api-error";
 
 // ── Jobs list page ─────────────────────────────────────────────────────────
 
 export default function JobsPage() {
-  const { data: jobs, isLoading } = useListJobs();
+  const { data: jobs, isLoading, isError, error, refetch } = useListJobs();
   const deleteJob = useDeleteJob();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -72,7 +73,9 @@ export default function JobsPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {isError && <ApiError message={error instanceof Error ? error.message : undefined} onRetry={refetch} />}
+
+      {!isError && <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="flex flex-col">
@@ -139,7 +142,7 @@ export default function JobsPage() {
             </Card>
           ))
         )}
-      </div>
+      </div>}
 
       <CreateJobDialog open={createOpen} onOpenChange={setCreateOpen} />
       <ImportJobDialog open={importOpen} onOpenChange={setImportOpen} />

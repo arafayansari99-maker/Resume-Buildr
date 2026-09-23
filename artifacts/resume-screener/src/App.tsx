@@ -16,7 +16,14 @@ import ResultsPage from "./pages/results";
 import ResultDetailPage from "./pages/result-detail";
 import ComparePage from "./pages/compare";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 function Router() {
   return (

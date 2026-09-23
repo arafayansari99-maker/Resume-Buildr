@@ -36,9 +36,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useNotifications } from "@/hooks/use-notifications";
+import { ApiError } from "@/components/api-error";
 
 export default function ResumesPage() {
-  const { data: resumes, isLoading } = useListResumes();
+  const { data: resumes, isLoading, isError, error, refetch } = useListResumes();
   const deleteResume = useDeleteResume();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -77,7 +78,9 @@ export default function ResumesPage() {
         <UploadDialog />
       </div>
 
-      <Card>
+      {isError && <ApiError message={error instanceof Error ? error.message : undefined} onRetry={refetch} />}
+
+      {!isError && <Card>
         <CardContent className="p-0">
           <div className="divide-y divide-border">
             {isLoading ? (
@@ -169,7 +172,7 @@ export default function ResumesPage() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
 
       <ResumePreviewDrawer resumeId={previewId} onClose={() => setPreviewId(null)} />
     </div>
