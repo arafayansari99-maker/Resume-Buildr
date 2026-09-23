@@ -6,7 +6,7 @@ Strategy (in order):
   1. Fetch page with browser-like headers
   2. Extract JSON-LD JobPosting structured data (most reliable when present)
   3. Site-specific CSS selectors for known job boards
-  4. trafilatura for generic main-content extraction
+    4. BeautifulSoup text extraction fallback
   5. Return best result found, never crash
 """
 
@@ -17,7 +17,6 @@ from typing import Any, Optional
 from urllib.parse import urlparse
 
 import requests
-import trafilatura
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
@@ -260,7 +259,7 @@ def _parse_greenhouse(soup: BeautifulSoup) -> dict[str, Any]:
 
 
 def _parse_generic(soup: BeautifulSoup, html: str) -> dict[str, Any]:
-    """trafilatura-based fallback — extracts main article text."""
+    """Extract generic job content without an additional ML/text package."""
     result: dict[str, Any] = {"title": "", "company": "", "location": "", "description": ""}
 
     # Title from <title> or first h1
@@ -271,13 +270,7 @@ def _parse_generic(soup: BeautifulSoup, html: str) -> dict[str, Any]:
     if h1:
         result["title"] = _clean(h1.get_text())
 
-    # Description via trafilatura
-    try:
-        text = trafilatura.extract(html, include_tables=False, no_fallback=False) or ""
-        result["description"] = _clean(text)
-    except Exception as e:
-        logger.debug("trafilatura extraction failed: %s", e)
-        result["description"] = _clean(soup.get_text(separator=" "))
+    result["description"] = _clean(soup.get_text(separator=" "))
 
     return result
 
@@ -330,15 +323,9 @@ def scrape_job_from_url(url: str) -> dict[str, Any]:
         if v and not result.get(k):
             result[k] = v
 
-    # ── 3. Fallback: if still no description, try trafilatura ──
+    # ── 3. Fallback: if still no description, use page text ──
     if not result["description"] and platform != "generic":
-        try:
-            text = trafilatura.extract(html, include_tables=False, no_fallback=False) or ""
-            if text:
-                result["description"] = _clean(text)
-        except Exception as e:
-            logger.debug("trafilatura extraction failed: %s", e)
-            result["description"] = _clean(soup.get_text(separator=" "))
+        result["description"] = _clean(soup.get_text(separator=" "))
 
     # ── 4. Validate ──
     if not result["title"] and not result["description"]:

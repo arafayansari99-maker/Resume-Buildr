@@ -1,9 +1,8 @@
 import logging
+import math
 import re
+from collections import Counter
 from typing import Any
-
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 
 logger = logging.getLogger(__name__)
 
@@ -92,14 +91,31 @@ def extract_skills(text: str) -> list[str]:
 
 def _compute_tfidf_similarity(text1: str, text2: str) -> float:
     try:
-        vectorizer = TfidfVectorizer(
-            stop_words="english",
-            ngram_range=(1, 2),
-            max_features=5000,
-        )
-        tfidf = vectorizer.fit_transform([text1, text2])
-        sim = cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0]
-        return float(sim)
+        stop_words = {"a", "an", "and", "are", "as", "at", "be", "by", "for", "from", "in", "is", "it", "of", "on", "or", "that", "the", "this", "to", "with"}
+
+        def tokens(text: str) -> list[str]:
+            words = re.findall(r"[a-z0-9][a-z0-9+#.-]*", text.lower())
+            unigrams = [word for word in words if word not in stop_words]
+            bigrams = [f"{left} {right}" for left, right in zip(unigrams, unigrams[1:])]
+            return unigrams + bigrams
+
+        documents = [tokens(text1), tokens(text2)]
+        if not documents[0] or not documents[1]:
+            return 0.0
+        document_frequency = Counter(term for document in documents for term in set(document))
+        vectors = []
+        for document in documents:
+            counts = Counter(document)
+            total = len(document)
+            vectors.append({
+                term: (count / total) * math.log((1 + len(documents)) / (1 + document_frequency[term])) + 1
+                for term, count in counts.items()
+            })
+        shared = set(vectors[0]).intersection(vectors[1])
+        numerator = sum(vectors[0][term] * vectors[1][term] for term in shared)
+        magnitude_a = math.sqrt(sum(value * value for value in vectors[0].values()))
+        magnitude_b = math.sqrt(sum(value * value for value in vectors[1].values()))
+        return numerator / (magnitude_a * magnitude_b) if magnitude_a and magnitude_b else 0.0
     except Exception:
         return 0.0
 
