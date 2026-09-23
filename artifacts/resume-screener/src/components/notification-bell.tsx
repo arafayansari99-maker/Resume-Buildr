@@ -3,7 +3,6 @@ import { Bell, BellRing, CheckCheck, Trash2, X, CheckCircle2, XCircle, Info, Ale
 import { useNotifications, type Notification, type NotifType } from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 // ── Icon & colour per type ──────────────────────────────────────────────────
 
@@ -41,7 +40,7 @@ function NotifRow({ notif }: { notif: Notification }) {
   return (
     <div
       className={cn(
-        "flex items-start gap-3 px-4 py-3 border-l-2 transition-colors",
+        "flex items-start gap-3 px-4 py-3 border-l-2 transition-colors hover:bg-white/[0.04] cursor-pointer",
         typeBorder(notif.type),
         !notif.read ? "bg-primary/5" : "bg-transparent"
       )}
@@ -111,12 +110,12 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative ml-auto shrink-0">
       <button
         ref={btnRef}
         onClick={handleOpen}
         className={cn(
-          "relative flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent transition-all",
+          "relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground shadow-sm transition-all hover:border-primary/30 hover:bg-primary/10 hover:text-foreground",
           open && "bg-sidebar-accent text-foreground"
         )}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
@@ -138,10 +137,10 @@ export function NotificationBell() {
       {open && (
         <div
           ref={panelRef}
-          className="absolute right-0 top-10 z-50 w-80 bg-popover border border-border rounded-lg shadow-xl overflow-hidden flex flex-col"
-          style={{ maxHeight: "min(480px, 80vh)" }}
+          className="notification-panel absolute left-0 top-[calc(100%+0.75rem)] z-50 flex w-[min(22rem,calc(100vw-1.5rem))] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101b2a] shadow-2xl shadow-black/30 backdrop-blur-xl"
+          style={{ maxHeight: "min(480px, calc(100dvh - 5rem))" }}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-sidebar shrink-0">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-white/[0.03] px-4 py-3">
             <div className="flex items-center gap-2">
               <Bell className="h-4 w-4 text-primary" />
               <span className="font-semibold text-sm">Notifications</span>
@@ -174,7 +173,7 @@ export function NotificationBell() {
               <p className="text-sm">No notifications yet</p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 overflow-auto">
+            <div className="notification-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <div className="divide-y divide-border/40">
                 {notifications.map(n => (
                   <div key={n.id} className="group/row">
@@ -182,7 +181,7 @@ export function NotificationBell() {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           )}
         </div>
       )}

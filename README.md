@@ -1,293 +1,168 @@
-# Resume-Buildr
+# Resume Matcher AI
 
-An **AI-powered ATS (Applicant Tracking System)** that analyzes resumes against job descriptions, generates explainable compatibility scores, and ranks multiple candidates using advanced NLP and ML techniques.
+AI-powered resume screening and job matching platform for recruiters, hiring managers, and talent teams.
 
-**Live Demo:** https://resume-buildr--arafayansari99.replit.app/dashboard
-
----
-
-## 🎯 Project Summary
-
-Resume-Buildr is a full-stack application built for recruiters and hiring managers to:
-- **Upload PDF resumes** and automatically extract text + skills
-- **Define job descriptions** with auto-extracted required skills
-- **Analyze compatibility** — single resume vs. job with explainable ATS score
-- **Rank candidates** — leaderboard view with scores and skill gaps
-- **Dashboard** — stats, score distribution, top missing skills, recent analyses
-
-This project demonstrates **real-world ML integration, API design, and full-stack architecture** with a focus on **explainability, security, and production-readiness**.
+This project helps users upload PDF resumes, import job descriptions, compare candidate fit, and review explainable matching scores across multiple applicants.
 
 ---
 
-## ✨ Key Features
+## Overview
 
-✅ **Resume Parsing** — PDF text extraction + automatic skill identification  
-✅ **Semantic Matching** — Uses sentence-transformers (all-MiniLM-L6-v2) + FAISS for deep semantic similarity  
-✅ **Explainable Scoring** — ATS score breakdown: 40% skill match + 30% semantic + 20% experience + 10% education  
-✅ **Multi-Candidate Ranking** — Leaderboard with filterable scores and skill gaps  
-✅ **Job Scraping** — Import job descriptions from URLs (LinkedIn, Indeed, etc.)  
-✅ **Secure API** — CORS, input validation, SQL injection prevention, rate limiting ready  
-✅ **Mobile Responsive** — Fully responsive React UI with Tailwind CSS  
-✅ **Dashboard Analytics** — Score distribution charts, missing skills heatmap  
+Resume Matcher AI is a full-stack application designed to simplify candidate screening. It combines:
+
+- a React + Vite frontend for recruiter workflows and dashboards
+- a Python FastAPI backend for resume parsing, job matching, and ranking logic
+- SQLite storage for local persistence
+- generated API clients for type-safe frontend/backend communication
+
+The goal is to reduce manual resume review time by surfacing the strongest candidate matches, highlighting skill gaps, and making the scoring process explainable.
 
 ---
 
-## 🏗️ Tech Stack
+## Features
+
+- Resume upload and PDF text extraction
+- Job creation and URL-based job import
+- Candidate analysis against a job description
+- ATS-style scoring with explainable breakdowns
+- Multi-candidate ranking and comparison workflow
+- Dashboard metrics for score distribution and missing skills
+- API-first design with generated TypeScript clients
+- Local development and production deployment support
+
+---
+
+## Tech Stack
 
 ### Frontend
-- **Framework:** React 19 + Vite
-- **Styling:** Tailwind CSS + shadcn/ui
-- **State Management:** React Query (TanStack Query)
-- **Routing:** Wouter
-- **Data Visualization:** Recharts
-- **Form Handling:** React Hook Form
-- **Export:** jsPDF for PDF downloads
-- **Type Safety:** TypeScript + Zod schemas (generated from OpenAPI)
+- React
+- Vite
+- TypeScript
+- Tailwind CSS
+- shadcn/ui components
+- TanStack Query
+- Wouter routing
 
 ### Backend
-- **Runtime:** Python 3.12 + FastAPI
-- **Server:** Uvicorn
-- **Database:** SQLite + SQLAlchemy ORM
-- **PDF Processing:** pdfplumber
-- **NLP/ML:**
-  - `sentence-transformers` — semantic embeddings
-  - `FAISS` — vector similarity search
-  - `scikit-learn` — TF-IDF fallback + skill extraction
-  - `transformers` — pre-trained model loading
-- **Web Scraping:** BeautifulSoup4 + trafilatura
-- **API Validation:** Pydantic
+- Python
+- FastAPI
+- SQLAlchemy
+- SQLite
+- Pydantic validation
 
-### DevOps & Tools
-- **Monorepo:** pnpm workspaces
-- **Build:** esbuild, Vite
-- **API Spec:** OpenAPI 3.0 + Orval codegen
-- **Type Generation:** Orval (React Query hooks + Zod)
-- **Security Scanning:** bandit (Python), pnpm audit (Node)
+### Tooling
+- pnpm workspaces
+- OpenAPI specification
+- generated React API client
+- generated Zod schemas
 
 ---
 
-## 📊 Product Requirements
-
-### Core MVP
-1. ✅ Upload and parse PDF resumes
-2. ✅ Define job descriptions manually or via URL import
-3. ✅ Analyze single resume vs. job with ATS score
-4. ✅ Rank multiple candidates
-5. ✅ Dashboard with analytics
-
-### Security & Production
-- ✅ Input validation + SQL injection prevention
-- ✅ CORS configured by environment
-- ✅ Error handling (no internal error leakage)
-- ✅ Secure file upload (PDF only, size validated)
-- ✅ Database initialization on startup
-- ✅ Dependency vulnerability scanning
-
-### Future Enhancements
-- Rate limiting middleware
-- Persistent user sessions (if adding auth)
-- Batch resume analysis
-- Resume template recommendations
-- Interview question generation
-
----
-
-## 🚀 Quick Start
+## Local Development
 
 ### Prerequisites
-- Node.js 24+, `pnpm`
-- Python 3.12+, `pip`
-- Git
+- Node.js 20+
+- pnpm
+- Python 3.11+
+- pip
 
-### Local Development
+### Install dependencies
 
-1. **Clone the repo**
-   ```bash
-   git clone https://github.com/arafayansari99-maker/Resume-Buildr.git
-   cd Resume-Buildr
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pnpm install
-   cd artifacts/api-server && pip install -r requirements.txt && cd ../..
-   ```
-
-3. **Start Backend** (PowerShell or Terminal)
-   ```bash
-   cd artifacts/api-server
-   python -m uvicorn main:app --host 0.0.0.0 --port 8080 --reload
-   ```
-
-4. **Start Frontend** (new terminal)
-   ```bash
-   cd artifacts/resume-screener
-   $env:PORT = 5173
-   $env:BASE_PATH = "/"
-   pnpm run dev
-   ```
-
-5. **Open browser**
-   ```
-   http://localhost:5173
-   ```
-
----
-
-## 📁 Project Structure
-
-```
-Resume-Buildr/
-├── artifacts/
-│   ├── api-server/              # Python FastAPI backend
-│   │   ├── main.py              # Routes & app config
-│   │   ├── nlp_engine.py        # ML scoring logic
-│   │   ├── database.py          # SQLAlchemy models
-│   │   ├── job_scraper.py       # URL job import
-│   │   ├── requirements.txt     # Python dependencies
-│   │   └── start.sh             # Dev startup script
-│   └── resume-screener/         # React Vite frontend
-│       ├── src/
-│       │   ├── pages/           # Route pages
-│       │   ├── components/      # Reusable UI
-│       │   └── hooks/           # Custom React hooks
-│       ├── vite.config.ts
-│       └── package.json
-├── lib/
-│   ├── api-spec/                # OpenAPI spec (single source of truth)
-│   ├── api-client-react/        # Generated React Query hooks
-│   └── api-zod/                 # Generated Zod schemas
-├── pnpm-workspace.yaml          # Monorepo config
-├── package.json                 # Root scripts
-└── README.md
+```bash
+git clone <your-repo-url>
+cd Resume-Matcher-AI
+pnpm install
+cd artifacts/api-server
+pip install -r requirements.txt
 ```
 
----
+### Start the backend
 
-## 🔗 API Endpoints
-
-All endpoints are under `/api/`.
-
-### Resumes
-- `POST /api/resumes/upload` — Upload PDF resume
-- `GET /api/resumes` — List all resumes
-- `GET /api/resumes/{id}` — Get single resume
-- `DELETE /api/resumes/{id}` — Delete resume
-
-### Jobs
-- `POST /api/jobs` — Create job manually
-- `POST /api/jobs/import-url` — Import job from URL
-- `GET /api/jobs` — List all jobs
-- `GET /api/jobs/{id}` — Get single job
-
-### Analysis
-- `POST /api/analysis/analyze` — Analyze resume vs. job
-- `GET /api/analysis/results` — List all analyses
-- `GET /api/analysis/results/{id}` — Get analysis detail
-- `GET /api/analysis/rankings` — Rank candidates
-- `GET /api/analysis/dashboard-stats` — Dashboard metrics
-
-### Health
-- `GET /api/healthz` — Health check
-
----
-
-## 📈 ATS Scoring Formula
-
-```
-Final Score = (0.40 × Skill Match) 
-            + (0.30 × Semantic Similarity) 
-            + (0.20 × Experience Match) 
-            + (0.10 × Education Match)
-```
-
-- **Skill Match:** Jaccard similarity of extracted skills
-- **Semantic Similarity:** Cosine similarity using sentence-transformers embeddings
-- **Experience Match:** Years parsed from resume vs. job requirement
-- **Education Match:** Degree level match (bachelors, masters, etc.)
-
----
-
-## 🔒 Security Features
-
-- ✅ **Input Validation** — Pydantic models enforce schema
-- ✅ **SQL Injection Prevention** — SQLAlchemy ORM parameterized queries
-- ✅ **File Upload Security** — PDF only, max 10MB, type checked
-- ✅ **CORS** — Configurable via `ALLOWED_ORIGINS` env var
-- ✅ **Error Handling** — No internal error details leaked to client
-- ✅ **Dependency Audits** — `pnpm audit` + `pip-audit` scans
-- ✅ **Linting** — Bandit (Python) for security warnings
-
----
-
-## 📊 What Recruiters Should Know
-
-### Why This Project?
-- **Real-world ML:** Demonstrates integration of sentence-transformers, FAISS, and scikit-learn
-- **Full-stack ownership:** Backend (Python) + Frontend (React) + DevOps (GitHub, Render, Vercel)
-- **Scalability:** Monorepo architecture, API-first design, cloud-ready
-- **Production mindset:** Security scanning, error handling, dependency management
-- **Explainability:** ATS scores break down into interpretable components
-
-### Tech Highlights
-- Semantic AI matching (not just keyword lookup)
-- Contract-first API design (OpenAPI → Orval codegen)
-- Type-safe across full stack (TypeScript + Python Pydantic)
-- Mobile-responsive, accessible UI (shadcn/ui + Tailwind)
-- Tested endpoints + security hardening
-
-### Potential Impact
-- Saves hiring teams hours on resume screening
-- Reduces bias through ML-based matching
-- Provides explainable scores for candidate discussions
-- Scales to thousands of resumes/jobs
-
----
-
-## 🛠️ Development
-
-### Running Tests
 ```bash
 cd artifacts/api-server
-python -m pytest test_api.py -v
+python -m uvicorn main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
-### Type Checking
+### Start the frontend
+
 ```bash
-pnpm run typecheck
+cd artifacts/resume-screener
+$env:PORT = 5173
+$env:BASE_PATH = "/"
+pnpm run dev
 ```
 
-### Security Audit
-```bash
-pnpm audit
-pip-audit -r requirements.txt
-```
+Open the app in the browser at:
 
-### Regenerate API Types
-```bash
-pnpm --filter @workspace/api-spec run codegen
+```text
+http://localhost:5173
 ```
 
 ---
 
-## 📝 License
+## Deployment
 
-MIT
+This project supports deployment with separate frontend and API hosts. The frontend reads the live API URL from the `VITE_API_URL` environment variable.
+
+### Frontend environment
+- `PORT=5173`
+- `BASE_PATH=/`
+- `VITE_API_URL=https://your-api-domain.com`
+
+### Backend environment
+- `PORT=8080`
+- `ALLOWED_ORIGINS=https://your-frontend-domain.com`
+
+Additional deployment guidance is available in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
-## 🤝 Author
+## Project Structure
 
-Built by Abdur Rafay as a portfolio project showcasing full-stack AI/ML engineering.
+```text
+Resume-Matcher-AI/
+├── artifacts/
+│   ├── api-server/            # FastAPI backend
+│   └── resume-screener/       # React + Vite frontend
+├── lib/
+│   ├── api-client-react/      # Generated frontend API client
+│   ├── api-spec/              # OpenAPI specification
+│   ├── api-zod/               # Generated Zod schemas
+│   └── db/                    # Database layer setup
+├── scripts/
+├── .env.example
+├── DEPLOYMENT.md
+├── package.json
+├── pnpm-workspace.yaml
+├── pnpm-lock.yaml
+├── README.md
+└── render.yaml
+```
 
-**Contact:**
-- GitHub: [@arafayansari99-maker](https://github.com/arafayansari99-maker)
-- Email: [a.rafayansari99@gmail.com]
-- LinkedIn: [https://www.linkedin.com/in/abdur-rafay-1x/]
 ---
 
-## 🚀 Next Steps
+## API Overview
 
-- ⭐ Star this repo if you find it useful!
-- 🐛 Issues & PRs welcome
-- 📬 Reach out for feedback or collaboration
+All backend routes are grouped under `/api`.
+
+Examples:
+- `GET /api/healthz`
+- `GET /api/resumes`
+- `POST /api/resumes/upload`
+- `POST /api/jobs`
+- `POST /api/jobs/import-url`
+- `POST /api/analysis/analyze`
+
+---
+
+## Notes
+
+- The project is monorepo-based and uses workspace packages.
+- The frontend and API can be run together locally for development.
+- Production configuration should always point the frontend to the live API host and allow that host in backend CORS settings.
+
+---
+
+## GitHub Repo Description
+
+AI-powered resume screening and job matching platform with React frontend and FastAPI backend.

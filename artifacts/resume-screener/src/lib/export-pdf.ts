@@ -126,6 +126,28 @@ function drawChip(
   return chipW + 2.5;
 }
 
+function chipRowCount(doc: jsPDF, skills: string[], startX: number, endX: number): number {
+  if (skills.length === 0) return 1;
+
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  let rows = 1;
+  let x = startX;
+  for (const skill of skills) {
+    const chipW = doc.getTextWidth(skill) + 8;
+    if (x + chipW > endX) {
+      rows += 1;
+      x = startX;
+    }
+    x += chipW;
+  }
+  return rows;
+}
+
+function safeFilenamePart(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 60) || "Report";
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export function exportAnalysisPDF(result: AnalysisResult): void {
@@ -189,10 +211,12 @@ export function exportAnalysisPDF(result: AnalysisResult): void {
   y += 28;
 
   // ── ATS verdict ───────────────────────────────────────────────────────────
-  y = checkPage(doc, y, 24);
+  const overallLines = doc.splitTextToSize(result.explanation.overall, CONTENT_W - 10);
+  const verdictHeight = Math.max(18, 15 + Math.max(0, overallLines.length - 1) * 4.5);
+  y = checkPage(doc, y, verdictHeight);
   const verdictColor = scoreColor(sc);
   rgb(doc, verdictColor, "fill");
-  doc.roundedRect(MARGIN, y, CONTENT_W, 18, 2, 2, "F");
+  doc.roundedRect(MARGIN, y, CONTENT_W, verdictHeight, 2, 2, "F");
 
   rgb(doc, C.white, "text");
   doc.setFontSize(10);
@@ -200,10 +224,9 @@ export function exportAnalysisPDF(result: AnalysisResult): void {
   doc.text(`${scoreLabel(sc)}  —  ${sc.toFixed(1)} / 100`, MARGIN + 5, y + 7);
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  const overallLines = doc.splitTextToSize(result.explanation.overall, CONTENT_W - 10);
-  doc.text(overallLines[0], MARGIN + 5, y + 14);
+  doc.text(overallLines, MARGIN + 5, y + 14, { lineHeightFactor: 1.15 });
 
-  y += 25;
+  y += verdictHeight + 7;
 
   // ── Score Breakdown ───────────────────────────────────────────────────────
   y = drawSectionHeader(doc, y, "Score Breakdown");
@@ -391,7 +414,7 @@ export function exportAnalysisPDF(result: AnalysisResult): void {
   drawPageFooter(doc);
 
   // ── Save ──────────────────────────────────────────────────────────────────
-  const filename = `RecruitIntel_${result.candidate_name.replace(/\s+/g, "_")}_${result.job_title.replace(/\s+/g, "_")}.pdf`;
+  const filename = `RecruitIntel_${safeFilenamePart(result.candidate_name)}_${safeFilenamePart(result.job_title)}.pdf`;
   doc.save(filename);
 }
 
@@ -574,18 +597,21 @@ export function exportRankingPDF(candidates: RankedCandidate[], jobTitle: string
   y = drawSectionHeader(doc, y, "Skill Gap Detail — All Candidates");
 
   candidates.forEach((c) => {
-    const cardMinH = 36;
-    y = checkPage(doc, y, cardMinH);
+    const matchedRows = chipRowCount(doc, c.matched_skills, MARGIN + 6, PAGE_W - MARGIN);
+    const missingRows = chipRowCount(doc, c.missing_skills, MARGIN + 6, PAGE_W - MARGIN);
+    const cardHeight = 19 + matchedRows * 8 + missingRows * 8 + 25;
+    y = checkPage(doc, y, cardHeight);
 
     // Card border
     rgb(doc, C.surface, "fill");
     rgb(doc, C.border, "draw");
     doc.setLineWidth(0.3);
+    doc.roundedRect(MARGIN, y, CONTENT_W, cardHeight, 1.5, 1.5, "FD");
 
     // Left accent bar (color by rank)
     const mc = medalColor(c.rank);
     rgb(doc, mc, "fill");
-    doc.roundedRect(MARGIN, y, 2.5, cardMinH, 0.5, 0.5, "F");
+    doc.roundedRect(MARGIN, y, 2.5, cardHeight, 0.5, 0.5, "F");
 
     // Candidate header
     rgb(doc, C.ink, "text");
