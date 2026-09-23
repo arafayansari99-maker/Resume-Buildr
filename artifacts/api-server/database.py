@@ -17,9 +17,20 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "resume_screening.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+configured_database_url = os.getenv("DATABASE_URL", "").strip()
+DATABASE_URL = configured_database_url or f"sqlite:///{DB_PATH}"
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# Supabase commonly provides a postgresql:// URL. psycopg is the SQLAlchemy
+# driver used by the API, so normalize the scheme before creating the engine.
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+
+if DATABASE_URL.startswith("sqlite:"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+else:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -31,6 +42,7 @@ class ResumeModel(Base):
     __tablename__ = "resumes"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(128), nullable=False, index=True)
     candidate_name = Column(String(255), nullable=False)
     filename = Column(String(255), nullable=False)
     raw_text = Column(Text, nullable=False, default="")
@@ -42,6 +54,7 @@ class JobModel(Base):
     __tablename__ = "jobs"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(128), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     company = Column(String(255), nullable=True, default="")
     description = Column(Text, nullable=False)
@@ -53,6 +66,7 @@ class AnalysisResultModel(Base):
     __tablename__ = "analysis_results"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(128), nullable=False, index=True)
     resume_id = Column(Integer, ForeignKey("resumes.id"), nullable=False)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
     candidate_name = Column(String(255), nullable=False)
@@ -69,6 +83,7 @@ class RankingRunModel(Base):
     __tablename__ = "ranking_runs"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(128), nullable=False, index=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
     job_title = Column(String(255), nullable=False)
     candidate_count = Column(Integer, nullable=False, default=0)
@@ -82,6 +97,7 @@ class RankingRunResultModel(Base):
     __tablename__ = "ranking_run_results"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(128), nullable=False, index=True)
     run_id = Column(Integer, ForeignKey("ranking_runs.id"), nullable=False)
     rank = Column(Integer, nullable=False)
     resume_id = Column(Integer, nullable=False)

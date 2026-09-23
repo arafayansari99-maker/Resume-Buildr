@@ -12,7 +12,8 @@ Resume Matcher AI is a full-stack application designed to simplify candidate scr
 
 - a React + Vite frontend for recruiter workflows and dashboards
 - a Python FastAPI backend for resume parsing, job matching, and ranking logic
-- SQLite storage for local persistence
+- Supabase PostgreSQL storage for production, with SQLite fallback for local development
+- Supabase Auth email/password accounts with per-user data isolation
 - generated API clients for type-safe frontend/backend communication
 
 The goal is to reduce manual resume review time by surfacing the strongest candidate matches, highlighting skill gaps, and making the scoring process explainable.
@@ -47,7 +48,7 @@ The goal is to reduce manual resume review time by surfacing the strongest candi
 - Python
 - FastAPI
 - SQLAlchemy
-- SQLite
+- Supabase PostgreSQL (production)
 - Pydantic validation
 
 ### Tooling
@@ -112,6 +113,11 @@ This project supports deployment with separate frontend and API hosts. The front
 ### Backend environment
 - `PORT=8080`
 - `ALLOWED_ORIGINS=https://your-frontend-domain.com`
+- `DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:5432/postgres?sslmode=require`
+- `SUPABASE_URL=https://<project-ref>.supabase.co`
+- `SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`
+
+The frontend requires `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. These are publishable values; keep database passwords and service-role keys on the backend only.
 
 Additional deployment guidance is available in [DEPLOYMENT.md](DEPLOYMENT.md).
 

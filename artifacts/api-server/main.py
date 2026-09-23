@@ -1,11 +1,17 @@
 import json
 import logging
 import os
+import urllib.error
+import urllib.request
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # --- Compatibility / legacy routes -------------------------------------------------
@@ -35,19 +41,25 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Resume Screening API", version="0.1.0")
+bearer_scheme = HTTPBearer(auto_error=False)
 
 # Configure CORS origins via `ALLOWED_ORIGINS` env var (comma-separated).
-# Default: allow all origins for local development. In production, set
-# `ALLOWED_ORIGINS` to the allowed host(s), e.g. "https://example.com".
+PRODUCTION_FRONTEND_ORIGIN = "https://resume-buildr-resume-screener.vercel.app"
 raw_allowed = os.getenv("ALLOWED_ORIGINS")
 if raw_allowed:
-    allowed_origins = [o.strip() for o in raw_allowed.split(",") if o.strip()]
+    allowed_origins = {
+        origin.strip().rstrip("/")
+        for origin in raw_allowed.split(",")
+        if origin.strip()
+    }
+    allowed_origins.add(PRODUCTION_FRONTEND_ORIGIN)
 else:
-    allowed_origins = ["*"]
+    allowed_origins = {"*"}
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=sorted(allowed_origins),
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,6 +70,42 @@ app.add_middleware(
 def startup_event():
     create_tables()
     logger.info("Database tables created/verified")
+
+
+def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+) -> str:
+    if not credentials:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    supabase_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    publishable_key = os.getenv("SUPABASE_PUBLISHABLE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY")
+    if not supabase_url or not publishable_key:
+        raise HTTPException(status_code=503, detail="Supabase authentication is not configured")
+
+    request = urllib.request.Request(
+        f"{supabase_url.rstrip('/')}/auth/v1/user",
+        headers={
+            "apikey": publishable_key,
+            "Authorization": f"Bearer {credentials.credentials}",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            user = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
+        logger.info("Supabase token validation failed: %s", exc)
+        raise HTTPException(status_code=401, detail="Invalid or expired session") from exc
+
+    user_id = user.get("id")
+    if not isinstance(user_id, str) or not user_id:
+        raise HTTPException(status_code=401, detail="Invalid Supabase user")
+    return user_id
+
+
+@app.get("/")
+def root():
+    return {"name": "AI Resume Screening API", "status": "ok"}
 
 
 def _dt_str(dt: Optional[datetime]) -> str:
@@ -82,6 +130,7 @@ async def upload_resume(
     file: UploadFile = File(...),
     candidate_name: Optional[str] = Form(None),
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
@@ -97,6 +146,7 @@ async def upload_resume(
         candidate_name = file.filename.replace(".pdf", "").replace("_", " ").title()
 
     resume = ResumeModel(
+        user_id=user_id,
         candidate_name=candidate_name.strip(),
         filename=file.filename,
         raw_text=raw_text,
@@ -119,12 +169,13 @@ async def upload_resume(
 
 
 @app.get("/api/resumes")
-def list_resumes(db: Session = Depends(get_db)):
-    resumes = db.query(ResumeModel).order_by(ResumeModel.created_at.desc()).all()
+def list_resumes(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    resumes = db.query(ResumeModel).filter(ResumeModel.user_id == user_id).order_by(ResumeModel.created_at.desc()).all()
     result = []
     for r in resumes:
         count = db.query(AnalysisResultModel).filter(
-            AnalysisResultModel.resume_id == r.id
+            AnalysisResultModel.resume_id == r.id,
+            AnalysisResultModel.user_id == user_id,
         ).count()
         result.append({
             "id": r.id,
@@ -138,12 +189,13 @@ def list_resumes(db: Session = Depends(get_db)):
 
 
 @app.get("/api/resumes/{resume_id}")
-def get_resume(resume_id: int, db: Session = Depends(get_db)):
-    r = db.query(ResumeModel).filter(ResumeModel.id == resume_id).first()
+def get_resume(resume_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    r = db.query(ResumeModel).filter(ResumeModel.id == resume_id, ResumeModel.user_id == user_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="Resume not found")
     count = db.query(AnalysisResultModel).filter(
-        AnalysisResultModel.resume_id == r.id
+        AnalysisResultModel.resume_id == r.id,
+        AnalysisResultModel.user_id == user_id,
     ).count()
     return {
         "id": r.id,
@@ -157,8 +209,8 @@ def get_resume(resume_id: int, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/resumes/{resume_id}")
-def delete_resume(resume_id: int, db: Session = Depends(get_db)):
-    r = db.query(ResumeModel).filter(ResumeModel.id == resume_id).first()
+def delete_resume(resume_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    r = db.query(ResumeModel).filter(ResumeModel.id == resume_id, ResumeModel.user_id == user_id).first()
     if not r:
         raise HTTPException(status_code=404, detail="Resume not found")
     db.delete(r)
@@ -180,7 +232,7 @@ class JobImportRequest(BaseModel):
 
 
 @app.post("/api/jobs/import-url")
-def import_job_from_url(req: JobImportRequest):
+def import_job_from_url(req: JobImportRequest, user_id: str = Depends(get_current_user_id)):
     try:
         data = scrape_job_from_url(req.url.strip())
     except ValueError as exc:
@@ -205,17 +257,18 @@ def import_job_from_url(req: JobImportRequest):
 
 
 @app.post("/api/jobs/add-from-url")
-def import_job_from_url_legacy(req: JobImportRequest):
+def import_job_from_url_legacy(req: JobImportRequest, user_id: str = Depends(get_current_user_id)):
     """Legacy compatibility: /api/jobs/add-from-url -> /api/jobs/import-url"""
-    return import_job_from_url(req)
+    return import_job_from_url(req, user_id)
 
 
 @app.post("/api/jobs")
-def create_job(req: CreateJobRequest, db: Session = Depends(get_db)):
+def create_job(req: CreateJobRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
     extracted = extract_skills(req.description)
     all_skills = sorted(set((req.required_skills or []) + extracted))
 
     job = JobModel(
+        user_id=user_id,
         title=req.title,
         company=req.company or "",
         description=req.description,
@@ -236,8 +289,8 @@ def create_job(req: CreateJobRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/api/jobs")
-def list_jobs(db: Session = Depends(get_db)):
-    jobs = db.query(JobModel).order_by(JobModel.created_at.desc()).all()
+def list_jobs(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    jobs = db.query(JobModel).filter(JobModel.user_id == user_id).order_by(JobModel.created_at.desc()).all()
     return [
         {
             "id": j.id,
@@ -252,8 +305,8 @@ def list_jobs(db: Session = Depends(get_db)):
 
 
 @app.get("/api/jobs/{job_id}")
-def get_job(job_id: int, db: Session = Depends(get_db)):
-    j = db.query(JobModel).filter(JobModel.id == job_id).first()
+def get_job(job_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    j = db.query(JobModel).filter(JobModel.id == job_id, JobModel.user_id == user_id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Job not found")
     return {
@@ -267,8 +320,8 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
 
 
 @app.delete("/api/jobs/{job_id}")
-def delete_job(job_id: int, db: Session = Depends(get_db)):
-    j = db.query(JobModel).filter(JobModel.id == job_id).first()
+def delete_job(job_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    j = db.query(JobModel).filter(JobModel.id == job_id, JobModel.user_id == user_id).first()
     if not j:
         raise HTTPException(status_code=404, detail="Job not found")
     db.delete(j)
@@ -284,12 +337,12 @@ class AnalyzeRequest(BaseModel):
 
 
 @app.post("/api/analysis/analyze")
-def analyze_resume(req: AnalyzeRequest, db: Session = Depends(get_db)):
-    resume = db.query(ResumeModel).filter(ResumeModel.id == req.resume_id).first()
+def analyze_resume(req: AnalyzeRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    resume = db.query(ResumeModel).filter(ResumeModel.id == req.resume_id, ResumeModel.user_id == user_id).first()
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
 
-    job = db.query(JobModel).filter(JobModel.id == req.job_id).first()
+    job = db.query(JobModel).filter(JobModel.id == req.job_id, JobModel.user_id == user_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -301,6 +354,7 @@ def analyze_resume(req: AnalyzeRequest, db: Session = Depends(get_db)):
     )
 
     analysis = AnalysisResultModel(
+        user_id=user_id,
         resume_id=resume.id,
         job_id=job.id,
         candidate_name=resume.candidate_name,
@@ -336,14 +390,14 @@ class RankRequest(BaseModel):
 
 
 @app.post("/api/analysis/rank")
-def rank_candidates(req: RankRequest, db: Session = Depends(get_db)):
-    job = db.query(JobModel).filter(JobModel.id == req.job_id).first()
+def rank_candidates(req: RankRequest, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    job = db.query(JobModel).filter(JobModel.id == req.job_id, JobModel.user_id == user_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
     results = []
     for rid in req.resume_ids:
-        resume = db.query(ResumeModel).filter(ResumeModel.id == rid).first()
+        resume = db.query(ResumeModel).filter(ResumeModel.id == rid, ResumeModel.user_id == user_id).first()
         if not resume:
             continue
 
@@ -369,6 +423,7 @@ def rank_candidates(req: RankRequest, db: Session = Depends(get_db)):
     # Persist the ranking run
     avg = sum(r["ats_score"] for r in results) / len(results) if results else 0.0
     run = RankingRunModel(
+        user_id=user_id,
         job_id=job.id,
         job_title=job.title,
         candidate_count=len(results),
@@ -381,6 +436,7 @@ def rank_candidates(req: RankRequest, db: Session = Depends(get_db)):
 
     for r in results:
         db.add(RankingRunResultModel(
+            user_id=user_id,
             run_id=run.id,
             rank=r["rank"],
             resume_id=r["resume_id"],
@@ -396,8 +452,8 @@ def rank_candidates(req: RankRequest, db: Session = Depends(get_db)):
 
 
 @app.get("/api/analysis/rankings")
-def list_ranking_runs(db: Session = Depends(get_db)):
-    runs = db.query(RankingRunModel).order_by(RankingRunModel.created_at.desc()).all()
+def list_ranking_runs(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    runs = db.query(RankingRunModel).filter(RankingRunModel.user_id == user_id).order_by(RankingRunModel.created_at.desc()).all()
     return [
         {
             "id": run.id,
@@ -414,20 +470,20 @@ def list_ranking_runs(db: Session = Depends(get_db)):
 
 
 @app.get("/api/ranking-runs")
-def list_ranking_runs_legacy(db: Session = Depends(get_db)):
+def list_ranking_runs_legacy(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
     """Legacy compatibility: /api/ranking-runs -> /api/analysis/rankings"""
-    return list_ranking_runs(db)
+    return list_ranking_runs(db, user_id)
 
 
 @app.get("/api/analysis/rankings/{run_id}")
-def get_ranking_run(run_id: int, db: Session = Depends(get_db)):
-    run = db.query(RankingRunModel).filter(RankingRunModel.id == run_id).first()
+def get_ranking_run(run_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    run = db.query(RankingRunModel).filter(RankingRunModel.id == run_id, RankingRunModel.user_id == user_id).first()
     if not run:
         raise HTTPException(status_code=404, detail="Ranking run not found")
 
     candidates = (
         db.query(RankingRunResultModel)
-        .filter(RankingRunResultModel.run_id == run_id)
+        .filter(RankingRunResultModel.run_id == run_id, RankingRunResultModel.user_id == user_id)
         .order_by(RankingRunResultModel.rank)
         .all()
     )
@@ -456,8 +512,8 @@ def get_ranking_run(run_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/analysis/results/{result_id}")
-def get_analysis_result(result_id: int, db: Session = Depends(get_db)):
-    a = db.query(AnalysisResultModel).filter(AnalysisResultModel.id == result_id).first()
+def get_analysis_result(result_id: int, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    a = db.query(AnalysisResultModel).filter(AnalysisResultModel.id == result_id, AnalysisResultModel.user_id == user_id).first()
     if not a:
         raise HTTPException(status_code=404, detail="Analysis result not found")
     return {
@@ -476,9 +532,9 @@ def get_analysis_result(result_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/api/analysis/results")
-def list_analysis_results(db: Session = Depends(get_db)):
+def list_analysis_results(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
     analyses = (
-        db.query(AnalysisResultModel)
+        db.query(AnalysisResultModel).filter(AnalysisResultModel.user_id == user_id)
         .order_by(AnalysisResultModel.created_at.desc())
         .all()
     )
@@ -497,18 +553,18 @@ def list_analysis_results(db: Session = Depends(get_db)):
 
 
 @app.get("/api/analysis-results")
-def list_analysis_results_legacy(db: Session = Depends(get_db)):
+def list_analysis_results_legacy(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
     """Legacy compatibility: /api/analysis-results -> /api/analysis/results"""
-    return list_analysis_results(db)
+    return list_analysis_results(db, user_id)
 
 
 @app.get("/api/analysis/dashboard-stats")
-def get_dashboard_stats(db: Session = Depends(get_db)):
-    total_resumes = db.query(ResumeModel).count()
-    total_jobs = db.query(JobModel).count()
-    total_analyses = db.query(AnalysisResultModel).count()
+def get_dashboard_stats(db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
+    total_resumes = db.query(ResumeModel).filter(ResumeModel.user_id == user_id).count()
+    total_jobs = db.query(JobModel).filter(JobModel.user_id == user_id).count()
+    total_analyses = db.query(AnalysisResultModel).filter(AnalysisResultModel.user_id == user_id).count()
 
-    analyses = db.query(AnalysisResultModel).all()
+    analyses = db.query(AnalysisResultModel).filter(AnalysisResultModel.user_id == user_id).all()
     scores = [a.ats_score for a in analyses if a.ats_score is not None]
     avg_score = round(sum(scores) / len(scores), 1) if scores else 0.0
 
@@ -524,7 +580,7 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     ]
 
     recent = (
-        db.query(AnalysisResultModel)
+        db.query(AnalysisResultModel).filter(AnalysisResultModel.user_id == user_id)
         .order_by(AnalysisResultModel.created_at.desc())
         .limit(5)
         .all()

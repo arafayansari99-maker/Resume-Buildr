@@ -9,9 +9,11 @@ import {
   Trophy,
   History,
   GitCompare,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/notification-bell";
+import { useAuth } from "@/hooks/use-auth";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -29,6 +31,7 @@ const navigation = [
 
 export function Layout({ children }: LayoutProps) {
   const [location] = useLocation();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="app-layout">
@@ -40,7 +43,7 @@ export function Layout({ children }: LayoutProps) {
       >
         <div className="app-sidebar__header">
           <div className="brand-mark">
-            <span className="font-mono">R</span>
+            <img src="/logo.svg?v=2" alt="RecruitIntel logo" />
           </div>
           <div>
             <div className="text-[0.6rem] uppercase tracking-[0.24em] text-muted-foreground/80">
@@ -50,7 +53,17 @@ export function Layout({ children }: LayoutProps) {
               RecruitIntel
             </div>
           </div>
-          <NotificationBell />
+          <div className="ml-auto flex items-center gap-1">
+            <NotificationBell />
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-foreground"
+              onClick={() => void signOut()}
+              title={`Sign out ${user?.email ?? ""}`}
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="app-sidebar__nav">

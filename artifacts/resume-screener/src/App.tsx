@@ -6,7 +6,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
 import { NotificationProvider } from "@/hooks/use-notifications";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
+import AuthPage from "@/pages/auth";
 
 import DashboardPage from "./pages/dashboard";
 import ResumesPage from "./pages/resumes";
@@ -52,26 +54,42 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <NotificationProvider>
-        <TooltipProvider>
-          <div className="app-shell">
-            <div className="ambient ambient-one" />
-            <div className="ambient ambient-two" />
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-              className="app-shell__content"
-            >
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <Router />
-              </WouterRouter>
-            </motion.div>
-          </div>
-          <Toaster />
-        </TooltipProvider>
-      </NotificationProvider>
+      <AuthProvider>
+        <AuthenticatedApp />
+      </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+function AuthenticatedApp() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading your workspace...</div>;
+  }
+
+  if (!user) return <AuthPage />;
+
+  return (
+    <NotificationProvider>
+      <TooltipProvider>
+        <div className="app-shell">
+          <div className="ambient ambient-one" />
+          <div className="ambient ambient-two" />
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut", delay: 0.08 }}
+            className="app-shell__content"
+          >
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Router />
+            </WouterRouter>
+          </motion.div>
+        </div>
+        <Toaster />
+      </TooltipProvider>
+    </NotificationProvider>
   );
 }
 

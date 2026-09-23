@@ -37,6 +37,13 @@ yarn-error.log
 testem.log
 /typings
 
+# local environment files
+.env
+.env.*
+!.env.example
+!.env.render
+!.env.vercel
+
 # System Files
 .DS_Store
 Thumbs.db
