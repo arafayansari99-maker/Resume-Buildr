@@ -2,7 +2,6 @@ import logging
 import re
 from typing import Any
 
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -52,25 +51,6 @@ EXPERIENCE_KEYWORDS = {
     "engineer", "developer", "architect", "analyst", "scientist", "intern",
     "work", "worked", "project", "team", "managed", "led", "built",
 }
-
-
-_embedding_model = None
-_embedding_available = False
-
-
-def _load_embedding_model():
-    global _embedding_model, _embedding_available
-    if _embedding_model is not None:
-        return _embedding_model
-    try:
-        from sentence_transformers import SentenceTransformer
-        _embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-        _embedding_available = True
-        logger.info("Sentence transformer model loaded successfully")
-    except Exception as e:
-        logger.warning(f"Could not load sentence transformer model: {e}")
-        _embedding_available = False
-    return _embedding_model
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
@@ -125,16 +105,9 @@ def _compute_tfidf_similarity(text1: str, text2: str) -> float:
 
 
 def _compute_semantic_similarity(text1: str, text2: str) -> float:
-    model = _load_embedding_model()
-    if model is None or not _embedding_available:
-        return _compute_tfidf_similarity(text1, text2)
-    try:
-        embeddings = model.encode([text1[:2048], text2[:2048]])
-        sim = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
-        return float(sim)
-    except Exception as e:
-        logger.warning(f"Semantic similarity fallback to TF-IDF: {e}")
-        return _compute_tfidf_similarity(text1, text2)
+    # Keep the API lightweight enough for serverless deployment. TF-IDF with
+    # word and phrase features is deterministic and requires no model bundle.
+    return _compute_tfidf_similarity(text1[:12000], text2[:12000])
 
 
 def _estimate_experience_years(text: str) -> int:

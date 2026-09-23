@@ -1,4 +1,4 @@
-# Deployment Guide: Supabase + Render + Vercel
+# Deployment Guide: Supabase + Vercel
 
 This guide walks through deploying Resume-Buildr to production using **Render** (backend) and **Vercel** (frontend).
 
@@ -8,7 +8,7 @@ This guide walks through deploying Resume-Buildr to production using **Render** 
 
 | Component | Platform | URL | Cost |
 |-----------|----------|-----|------|
-| Backend (FastAPI) | Render | Set this to your deployed Render service URL | Free tier available |
+| Backend (FastAPI) | Vercel | Set this to your deployed Vercel API URL | Function limits apply |
 | Frontend (React) | Vercel | https://resume-buildr.vercel.app | Free tier available |
 | Database | Supabase PostgreSQL | Supabase project URL | Free tier available |
 
@@ -69,7 +69,64 @@ Run this only once. The reset utility drops and recreates the application tables
 
 ---
 
-## Step 2: Deploy Backend on Render
+## Step 2: Deploy FastAPI Backend on Vercel
+
+Create a second Vercel project for the API. Keep the frontend and backend as separate Vercel projects.
+
+1. In Vercel, choose **Add New → Project** and import the same GitHub repository.
+2. Set **Root Directory** to `artifacts/api-server`.
+3. Select the **FastAPI** or **Python** framework preset.
+4. Leave **Build Command**, **Output Directory**, and **Start Command** empty.
+5. Vercel detects `main.py` and the top-level FastAPI `app` automatically. The repository also contains [vercel.json](artifacts/api-server/vercel.json) with a 60-second function duration.
+6. Add these backend environment variables to **Production, Preview, and Development** as needed:
+
+```env
+DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:5432/postgres?sslmode=require
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+ALLOWED_ORIGINS=https://resume-buildr-resume-screener.vercel.app
+PYTHONUNBUFFERED=1
+```
+
+7. Deploy the project. The API URL will look like:
+
+```text
+https://resume-buildr-api.vercel.app
+```
+
+The API uses lightweight TF-IDF phrase similarity for serverless deployment. The previous `sentence-transformers` and `faiss-cpu` packages were removed because their PyTorch/model bundle exceeded Vercel's 500 MB function limit.
+
+Do not set `VITE_` or `NEXT_PUBLIC_` variables in the backend project. Do not add the PostgreSQL password or a Supabase service-role key to the frontend project.
+
+### Verify the API deployment
+
+Open these URLs before connecting the frontend:
+
+```text
+https://resume-buildr-api.vercel.app/
+https://resume-buildr-api.vercel.app/docs
+https://resume-buildr-api.vercel.app/api/healthz
+```
+
+The health endpoint must return:
+
+```json
+{"status":"ok"}
+```
+
+If these URLs return `404`, the Vercel project root is wrong. It must be `artifacts/api-server`, not the repository root or frontend directory.
+
+### Reset the live application data once
+
+Before first production use, run the guarded reset utility from the Vercel project context or execute the equivalent SQL in Supabase:
+
+```sql
+drop table if exists ranking_run_results, ranking_runs, analysis_results, resumes, jobs cascade;
+```
+
+Redeploy after the reset so the API startup recreates the empty schema. Supabase Auth users are not affected.
+
+## Step 3: Deploy Backend on Render (Alternative)
 
 ### 2.1 Create Render Web Service
 
@@ -112,7 +169,7 @@ https://your-render-service.onrender.com
 
 ---
 
-## Step 3: Deploy Frontend on Vercel
+## Step 4: Deploy Frontend on Vercel
 
 ### 3.1 Create Vercel Project
 
@@ -133,7 +190,7 @@ https://your-render-service.onrender.com
 2. Add variables from [`artifacts/resume-screener/.env.vercel`](artifacts/resume-screener/.env.vercel):
    - `PORT=5173`
    - `BASE_PATH=/`
-  - `VITE_API_URL=https://your-render-service.onrender.com` (use the actual Render URL from Step 1.3)
+  - `VITE_API_URL=https://resume-buildr-api.vercel.app` (use the actual Vercel API URL from Step 2)
 
 3. Click **Deploy**
 
@@ -146,7 +203,7 @@ https://your-vercel-project.vercel.app
 
 ---
 
-## Step 4: Update Backend CORS
+## Step 5: Update Backend CORS
 
 Now that the frontend is deployed, update the backend to allow it:
 
@@ -178,6 +235,12 @@ Once both are deployed:
 - Check that `VITE_API_URL` in Vercel points to the correct Render backend
 - Verify `ALLOWED_ORIGINS` in Render includes your Vercel URL
 - Browser console → Network tab to see failed API calls
+
+### Vercel reports a function bundle-size error
+- Confirm the API project root is `artifacts/api-server`
+- Confirm the API deployment uses the current `requirements.txt`
+- Redeploy with **Use existing Build Cache: Off**
+- Do not add `sentence-transformers`, `torch`, or `faiss-cpu` back to the Vercel API requirements
 
 ### Backend cold start is slow
 - Render's free tier sleeps after 15 minutes of inactivity

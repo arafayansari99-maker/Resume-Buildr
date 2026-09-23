@@ -13,8 +13,8 @@ An AI-powered ATS system that analyzes resumes against job descriptions, generat
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9 (frontend tooling)
 - **Frontend:** React + Vite, Tailwind CSS, shadcn/ui, Recharts, React Query, wouter
-- **Backend:** Python 3, FastAPI, SQLite + SQLAlchemy, uvicorn
-- **ML/NLP:** sentence-transformers (all-MiniLM-L6-v2), FAISS, scikit-learn TF-IDF, pdfplumber
+- **Backend:** Python 3, FastAPI, Supabase PostgreSQL + SQLAlchemy, uvicorn
+- **ML/NLP:** scikit-learn TF-IDF phrase similarity, pdfplumber
 - API codegen: Orval (from OpenAPI spec → React Query hooks + Zod schemas)
 
 ## Where things live
@@ -30,10 +30,10 @@ An AI-powered ATS system that analyzes resumes against job descriptions, generat
 
 ## Architecture decisions
 
-- **Python FastAPI replaces Node.js/Express** for the API server to support ML libraries (sentence-transformers, FAISS, scikit-learn). The artifact.toml was updated to run `uvicorn` directly.
-- **SQLite** (not PostgreSQL) — lightweight, file-based, no provisioning needed. Stored at `artifacts/api-server/resume_screening.db`.
+- **Python FastAPI replaces Node.js/Express** for the API server to support Python parsing and scoring libraries. The artifact.toml was updated to run `uvicorn` directly.
+- **Supabase PostgreSQL** stores production data; SQLite remains a local fallback.
 - **ATS score formula:** 40% skill match + 30% semantic similarity + 20% experience match + 10% education match.
-- **Graceful ML fallback:** if sentence-transformers model fails to load, system falls back to TF-IDF cosine similarity for semantic scoring.
+- **Serverless-compatible scoring:** TF-IDF phrase similarity keeps the API bundle within Vercel Function limits.
 - **Contract-first:** OpenAPI spec → Orval codegen → typed React Query hooks. Frontend never writes raw fetch calls.
 
 ## Product
@@ -51,8 +51,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Gotchas
 
 - The API server runs Python (not Node.js) — do not try to run it with `pnpm`. Use `uvicorn` directly or via `start.sh`.
-- Python packages (sentence-transformers, FAISS) are installed via pip, not pnpm. Check `requirements.txt`.
-- The ML model (`all-MiniLM-L6-v2`) is downloaded on first use from HuggingFace. First analysis may be slower.
+- Python packages are installed via pip, not pnpm. Check `requirements.txt`.
 - After each OpenAPI spec change, run `pnpm --filter @workspace/api-spec run codegen` before using the updated types.
 - The `lib/api-zod/tsconfig.json` must include `"lib": ["esnext", "dom"]` for `File`/`Blob` types.
 
