@@ -7,7 +7,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Response, UploadFile
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from dotenv import load_dotenv
 
@@ -106,6 +106,14 @@ def get_current_user_id(
 @app.get("/")
 def root():
     return {"name": "AI Resume Screening API", "status": "ok"}
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(
+        content='''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#091525"/><rect x="40" y="40" width="432" height="432" rx="108" fill="#37B9C7"/><path d="M165 105H288L357 174V384C357 398 346 409 332 409H165C151 409 140 398 140 384V130C140 116 151 105 165 105Z" fill="#F8FAFC"/><path d="M184 213H313M184 252H276" stroke="#152A48" stroke-width="17" stroke-linecap="round"/><circle cx="315" cy="323" r="65" fill="#091525" stroke="#F8FAFC" stroke-width="10"/><path d="M285 323L305 343L347 299" stroke="#53E5C0" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/></svg>''',
+        media_type="image/svg+xml",
+    )
 
 
 def _dt_str(dt: Optional[datetime]) -> str:
