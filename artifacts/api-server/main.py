@@ -68,8 +68,14 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
-    create_tables()
-    logger.info("Database tables created/verified")
+    try:
+        create_tables()
+        logger.info("Database tables created/verified")
+    except Exception:
+        # Keep public health and docs routes available so Vercel logs can expose
+        # a missing or unreachable DATABASE_URL instead of returning a generic
+        # function-invocation failure for every route.
+        logger.exception("Database initialization failed; verify DATABASE_URL and Supabase pooler access")
 
 
 def get_current_user_id(

@@ -20,21 +20,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    const client = supabase;
 
-    void supabase.auth.getSession().then(({ data }) => {
+    if (!client) {
+      setLoading(false);
+      setAuthTokenGetter(null);
+      return () => { mounted = false; };
+    }
+
+    void client.auth.getSession().then(({ data }) => {
       if (mounted) {
         setSession(data.session);
         setLoading(false);
       }
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: subscription } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
     });
 
     setAuthTokenGetter(async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await client.auth.getSession();
       return data.session?.access_token ?? null;
     });
 
@@ -50,14 +57,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     loading,
     signIn: async (email, password) => {
+      if (!supabase) return { error: new Error("Supabase authentication is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel.") };
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       return { error: error ? new Error(error.message) : null };
     },
     signUp: async (email, password) => {
+      if (!supabase) return { error: new Error("Supabase authentication is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel.") };
       const { error } = await supabase.auth.signUp({ email, password });
       return { error: error ? new Error(error.message) : null };
     },
     signOut: async () => {
+      if (!supabase) return { error: null };
       const { error } = await supabase.auth.signOut();
       return { error: error ? new Error(error.message) : null };
     },
