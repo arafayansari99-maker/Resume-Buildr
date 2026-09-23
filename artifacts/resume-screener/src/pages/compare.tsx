@@ -124,7 +124,7 @@ function SlotCard({
   label: string;
   color: "blue" | "violet";
   compareResult: AnalysisResult | null;
-  resumes: ReturnType<typeof useListResumes>["data"];
+  resumes: Resume[] | undefined;
   jobId: string;
   onResumeChange: (id: string) => void;
   onAnalyze: () => void;
@@ -287,7 +287,7 @@ function SlotCard({
 export default function ComparePage() {
   const resumesQuery = useListResumes();
   const jobsQuery = useListJobs();
-  const resumes = resumesQuery.data as Resume[] | undefined;
+  const resumes: Resume[] | undefined = resumesQuery.data as Resume[] | undefined;
   const { data: jobs } = jobsQuery;
   const { addNotification } = useNotifications();
   const analyzeResume = useAnalyzeResume();

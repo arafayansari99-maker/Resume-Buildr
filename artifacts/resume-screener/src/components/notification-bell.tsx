@@ -85,9 +85,12 @@ export function NotificationBell() {
     if (unreadCount > prevUnread.current) {
       setPulse(true);
       const t = setTimeout(() => setPulse(false), 800);
+      prevUnread.current = unreadCount;
       return () => clearTimeout(t);
     }
+
     prevUnread.current = unreadCount;
+    return undefined;
   }, [unreadCount]);
 
   useEffect(() => {
