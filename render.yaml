@@ -8,5 +8,7 @@ services:
     envVars:
       - key: ALLOWED_ORIGINS
         value: https://resume-buildr-resume-screener.vercel.app
+      - key: AUTH_DISABLED
+        value: "true"
       - key: PYTHONUNBUFFERED
         value: "1"

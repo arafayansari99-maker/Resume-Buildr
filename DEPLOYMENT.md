@@ -24,7 +24,9 @@ This guide walks through deploying Resume-Buildr to production using **Render** 
 
 ## Authentication and Data Isolation
 
-The application uses Supabase Auth email/password accounts. Every API request must carry a Supabase access token, and every resume, job, analysis, ranking, and dashboard query is scoped to that authenticated user.
+Temporary guest access is enabled by default: the frontend opens directly to the dashboard, and unauthenticated API requests use a shared `anonymous` workspace. All visitors using guest access can view, create, or delete that workspace's resumes, jobs, analyses, and rankings. Do not use guest mode for sensitive or production data.
+
+To require sign-in again, set `VITE_AUTH_DISABLED=false` in the frontend deployment and `AUTH_DISABLED=false` in the API deployment, then redeploy both services. Authenticated requests remain supported while guest access is enabled and are still scoped to the signed-in user.
 
 In Supabase, open **Authentication → Providers → Email** and enable email/password sign-in. In Render, add:
 
@@ -84,6 +86,7 @@ Create a second Vercel project for the API. Keep the frontend and backend as sep
 DATABASE_URL=postgresql://postgres.<project-ref>:<password>@<region>.pooler.supabase.com:5432/postgres?sslmode=require
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+AUTH_DISABLED=true
 ALLOWED_ORIGINS=https://resume-buildr-resume-screener.vercel.app
 PYTHONUNBUFFERED=1
 ```
@@ -191,6 +194,7 @@ https://your-render-service.onrender.com
    - `PORT=5173`
    - `BASE_PATH=/`
   - `VITE_API_URL=https://resume-buildr-api.vercel.app` (use the actual Vercel API URL from Step 2)
+   - `VITE_AUTH_DISABLED=true`
 
 3. Click **Deploy**
 

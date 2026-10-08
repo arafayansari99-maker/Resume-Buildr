@@ -28,6 +28,8 @@ const queryClient = new QueryClient({
   },
 });
 
+const authDisabled = import.meta.env.VITE_AUTH_DISABLED !== "false";
+
 function Router() {
   return (
     <Layout>
@@ -64,11 +66,11 @@ function App() {
 function AuthenticatedApp() {
   const { user, loading } = useAuth();
 
-  if (loading) {
+  if (!authDisabled && loading) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading your workspace...</div>;
   }
 
-  if (!user) return <AuthPage />;
+  if (!authDisabled && !user) return <AuthPage />;
 
   return (
     <NotificationProvider>

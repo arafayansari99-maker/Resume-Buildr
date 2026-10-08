@@ -55,14 +55,16 @@ export function Layout({ children }: LayoutProps) {
           </div>
           <div className="ml-auto flex items-center gap-1">
             <NotificationBell />
-            <button
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-foreground"
-              onClick={() => void signOut()}
-              title={`Sign out ${user?.email ?? ""}`}
-              aria-label="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+            {user && (
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-muted-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-foreground"
+                onClick={() => void signOut()}
+                title={`Sign out ${user.email}`}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
